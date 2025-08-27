@@ -71,17 +71,23 @@ const authServices = {
 
     login: async (loginRequest) => {
         const user = await User.findOne({ mssv: loginRequest.mssv });
-        if (!user) throw new Error("MSSV không tồn tại");
+        if (!user) throw new AppError(UserError.MSSV_NOT_FOUND);
 
         const isMatch = await bcrypt.compare(loginRequest.password, user.password);
-        if (!isMatch) throw new Error("Sai mật khẩu");
+        if (!isMatch) throw new AppError(UserError.INVALID_PASSWORD);
 
         const token = jwt.sign(
         { id: user._id, mssv: user.mssv },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES }
         );
-        return { user_id: user._id, token };
+
+        const refreshToken = jwt.sign(
+            { id: user._id, mssv: user.mssv },
+            process.env.JWT_REFRESH_SECRET,
+            { expiresIn: process.env.JWT_REFRESH_EXPIRES}
+        );
+        return { user_id: user._id, token, refreshToken };
     },
 
     forgotPassword : async (forgotRequest) => {
@@ -150,7 +156,6 @@ const authServices = {
     resetPassword : async (resetPassRequest, cookies) => {
         const newPass = resetPassRequest.newPassword;
         const resetToken = cookies.resetPass_token;
-      
         const payload = jwt.verify(resetToken, process.env.JWT_SECRET);
         if (payload.purpose != "password_reset") throw new Error("Mục đích trong reset token không hợp lệ.");
         const user =  await User.findOne({ _id : payload.sub});
@@ -174,13 +179,7 @@ const authServices = {
         }
     }, 
 
-//         const refreshToken = jwt.sign(
-//         { id: user._id, mssv: user.mssv },
-//         process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-//         { expiresIn: process.env.JWT_REFRESH_EXPIRES}
-//     );
-//         return { user_id: user._id, token, refreshToken };
-//     }
+
 
 };
 module.exports = authServices;

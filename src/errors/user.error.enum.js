@@ -54,6 +54,16 @@ const UserError = {
     statusCode: 400,
     errorCode: "OTP_NOT_MATCH",
   },
+  MSSV_NOT_FOUND: {
+    message: "MSSV không tồn tại",
+    statusCode: 404,
+    errorCode: "MSSV_NOT_FOUND",
+  },
+  INVALID_PASSWORD: {
+    message: "Sai mật khẩu",
+    statusCode: 401,
+    errorCode: "INVALID_PASSWORD",
+  },
 };
 
 module.exports = UserError;
