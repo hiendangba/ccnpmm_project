@@ -24,4 +24,23 @@ class VerifyOTP {
   }
 }
 
-module.exports = { LoginRequestDTO, RegisterRequestDTO, VerifyOTP };
+class ForgotPassword {
+  constructor(body) {
+    this.email = body.email;
+  }
+}
+
+class VerifyOTPFB {
+  constructor(body){
+    this.flowId = body.flowId;
+    this.otp = body.otp;
+  }
+}
+
+class ResetPassword {
+  constructor(body){
+    this.newPassword = body.newPassword;
+  }
+}
+
+module.exports = { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword };
