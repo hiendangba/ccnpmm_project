@@ -1,5 +1,4 @@
 const User = require("../models/user.model");
-const { LoginRequestDTO, RegisterRequestDTO } = require("../dto/request/auth.request.dto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendMail  = require('../utils/mailer');
@@ -9,30 +8,31 @@ const verifyOTPUtil = require("../utils/verifyOTPUtil");
 const { nanoid } = require('nanoid');
 const { json } = require("express");
 const { resetPassword } = require("../controllers/auth.controller");
+const AppError = require("../errors/AppError");
+const UserError = require("../errors/user.error.enum");
+const authValidation = require("../validations/auth.validation");
 
 
 
 const authServices = {
     register: async (registerRequest) => {
-        const requiredFields = ["name", "password", "mssv", "gender", "address", "email", "age"];
-        const missing = requiredFields.filter(field => !registerRequest[field]);
-
-        if (missing.length > 0) {
-            throw new Error(`Thiếu thông tin: ${missing.join(", ")}`);
-        }
 
         const exists = await User.findOne({ email:registerRequest.email });
-        if (exists) 
-            return res.status(400).json({ message: "Email already exists" });
-        
+
+        if (exists) {
+            throw new AppError(UserError.EMAIL_EXISTS);
+        }
+
+        //kiểm tra dữ liệu hợp lệ
+        authValidation(registerRequest);  
+
         const otp = generateOTP();
-   
 
-          // Lưu OTP vào Redis
+        // Lưu OTP vào Redis
         await redisClient.set(`otp:${registerRequest.email}`, otp, { EX: 600 });
-
         // Lưu user tạm vào Redis
         await redisClient.set(`pendingUser:${registerRequest.email}`, JSON.stringify(registerRequest), { EX: 600 });
+        
         sendMail({
             to: registerRequest.email,
             subject: "Chào mừng bạn đăng ký!",
@@ -50,14 +50,12 @@ const authServices = {
 
     verifyOTP: async(verifyOTP) =>{
         const storedOTP = await redisClient.get(`otp:${verifyOTP.email}`);
-        if (!storedOTP) throw new Error("OTP đã hết hạn hoặc không tồn tại");
+        if (!storedOTP) throw new AppError(UserError.OTP_INVALID_OR_EXPIRED);
 
-        if (storedOTP !== verifyOTP.otp) throw new Error("OTP không đúng");
+        if (storedOTP !== verifyOTP.otp) throw new AppError(UserError.OTP_NOT_MATCH);
 
         const pendingUserData = await redisClient.get(`pendingUser:${verifyOTP.email}`);
         
-        if (!pendingUserData) throw new Error("Dữ liệu người dùng tạm thời đã hết hạn");
-
         const pendingUser = JSON.parse(pendingUserData);
         const hashedPassword = await bcrypt.hash(pendingUser.password, 10);
         const newUser = new User({ ...pendingUser, password: hashedPassword });
@@ -175,5 +173,14 @@ const authServices = {
             return true;
         }
     }, 
+
+//         const refreshToken = jwt.sign(
+//         { id: user._id, mssv: user.mssv },
+//         process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+//         { expiresIn: process.env.JWT_REFRESH_EXPIRES}
+//     );
+//         return { user_id: user._id, token, refreshToken };
+//     }
+
 };
 module.exports = authServices;
