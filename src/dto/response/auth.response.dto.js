@@ -2,7 +2,6 @@ class LoginResponseDTO {
   constructor(user_id, token, refreshToken) {
     this.user_id = user_id;
     this.token = token
-    this.refreshToken = refreshToken
     }
 }
 
