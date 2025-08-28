@@ -32,4 +32,42 @@ function authValidation(registerRequest) {
   }
 }
 
-module.exports = authValidation;
+function validateFlowData(data) {
+  if (!data || typeof data !== "object") {
+    throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check userId
+  if (!data.userId) {
+    throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check attempts
+  if (typeof data.attempts !== "number" || data.attempts < 0) {
+    throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check maxAttempts
+  if (typeof data.maxAttempts !== "number" || data.maxAttempts <= 0) {
+    throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check resendCount
+  if (typeof data.resendCount !== "number" || data.resendCount < 0) {
+    throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check maxResends
+    if (typeof data.maxResends !== "number" || data.maxResends <= 0) {
+      throw new AppError(UserError.INVALID_FLOWID);
+  }
+
+  // check otpHashed
+  if (!data.otpHashed || typeof data.otpHashed !== "string") {
+    throw new AppError(UserError.OTP_HASHED_NOT_FOUND);
+  }
+
+  return data; // nếu ok thì return lại cho chắc
+}
+
+module.exports = {authValidation,validateFlowData};

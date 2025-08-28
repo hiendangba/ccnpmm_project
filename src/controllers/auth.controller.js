@@ -1,6 +1,8 @@
 const authServices = require("../services/auth.service");
-const { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword } = require("../dto/request/auth.request.dto");
-const { LoginResponseDTO, RegisterResponseDTO, VerifyResponseDTO } = require("../dto/response/auth.response.dto");
+const { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword, ResendOTP } = require("../dto/request/auth.request.dto");
+const { ForgotPasswordResponseDTO, VerifyOTPFBResponseDTO, ResetPasswordResponseDTO, RegisterResponseDTO, VerifyResponseDTO, LoginResponseDTO, ResendOTPResponseDTO  } = require("../dto/response/auth.response.dto");
+const { authMiddleware } = require("../middlewares/auth.middleware");
+
 const authController = {
   register: async (req, res) => {
       try {
@@ -46,10 +48,11 @@ const authController = {
     try{
       const forgotPassRequest = new ForgotPassword(req.body)
       const flowId = await authServices.forgotPassword(forgotPassRequest);
-      res.json({ flow_id: flowId, try_time: 3 , message: "Vui lòng kiểm tra email để lấy OTP xác thực."});
+      const forgotPassResponse = new ForgotPasswordResponseDTO (flowId, 3, "Mã OTP đã được gửi đến email của bạn vui lòng kiểm tra.")
+      res.status(200).json(forgotPassResponse);
     } catch (err) {
-      res.status(400).json({ message: "Hiện tại máy chủ đang bị lỗi." });  
-    }
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });  
+    } 
   },
 
   verifyOtpFB : async (req, res) => {
@@ -62,32 +65,38 @@ const authController = {
         sameSite: 'strict', 
         maxAge: 10 * 60 * 1000 
       })
-      res.json({message: "OTP hợp lệ."});
+      const verifyOTPFBResponseDTO = new VerifyOTPFBResponseDTO ("Xác thực OTP thành công.");
+      res.status(200).json(verifyOTPFBResponseDTO);
     }
     catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });  
     }
   },
 
   resetPassword : async (req, res) => {
     try{
-      const resetPassRequest = new ResetPassword(req.body);
-      const cookies = req.cookies;
-      const result = await authServices.resetPassword(resetPassRequest, cookies);
-      if (result) {
-        // Xóa cookie
-        res.clearCookie('resetPass_token');
-        res.json({ message: 'Đặt lại mật khẩu thành công.' });
-      }
-      else {
-        res.status(400).json({ message: 'Đặt lại mật khẩu thất bại.' });
-      }
+      const resetPassRequest = new ResetPassword(req.body, req.resetPayload);
+      await authServices.resetPassword(resetPassRequest);
+      const result = new ResetPasswordResponseDTO ('Đặt lại mật khẩu thành công.')
+      res.clearCookie('resetPass_token');
+      res.status(200).json(result);
     }
     catch (err){
-      res.status(400).json({ message: err.message });
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
   },
 
+  resendOTP : async (req, res) => {
+    try {
+      const resendOTPRequest = new ResendOTP (req.body);
+      await authServices.resendOTP(resendOTPRequest);
+      const result = new ResendOTPResponseDTO ("Đã gửi lại OTP vào email của bạn.")
+      res.status(200).json(result);
+    }
+    catch (err){
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
+  }
 
 };
 

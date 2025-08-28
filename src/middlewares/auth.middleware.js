@@ -14,4 +14,20 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+const checkPassTokenMiddleware = (req, res, next) => {
+  const resetToken = req.cookies.resetPass_token;
+  if (!resetToken ){
+    return res.status(401).json({ message: "Không có token, không thể thực hiện hành động." });
+  }
+
+  try{
+    const payload = jwt.verify(resetToken, process.env.JWT_SECRET);
+    req.resetPayload = payload;
+    next();
+  }
+  catch{
+    return res.status(403).json({ message: "Token không hợp lệ" });
+  }
+}
+
+module.exports =  { authMiddleware, checkPassTokenMiddleware };
