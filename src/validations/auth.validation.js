@@ -2,7 +2,7 @@ const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 
 function authValidation(registerRequest) {
-  const { name, email, password, gender, age, address, mssv  } = registerRequest;
+  const { name, email, password, mssv  } = registerRequest;
 
   // check name
   if (!name || name.trim() === "") {
@@ -14,6 +14,10 @@ function authValidation(registerRequest) {
     throw new AppError(UserError.MISSING_EMAIL);
   }
 
+  if (!mssv || mssv.trim() === "") {
+    throw new AppError(UserError.MISSING_MSSV);
+  }
+  
   const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
   if (!emailRegex.test(email)) {
     throw new AppError(UserError.INVALID_EMAIL);
@@ -26,18 +30,6 @@ function authValidation(registerRequest) {
   if (password.length < 6) {
     throw new AppError(UserError.PASSWORD_TOO_SHORT);
   }
-
-  // check gender
-  const validGenders = ["nam", "nữ", "khác"];
-  if (!validGenders.includes(gender)) {
-    throw new AppError(UserError.INVALID_GENDER);
-  }
-
-  // check age
-  if (typeof age !== "number" || age < 18) {
-    throw new AppError(UserError.AGE_TOO_YOUNG);
-  }
-  return true;
 }
 
 function validateFlowData(data) {
