@@ -4,6 +4,7 @@ const { LoginResponseDTO, RegisterResponseDTO, VerifyResponseDTO } = require("..
 const authController = {
   register: async (req, res) => {
       try {
+        console.log(req.body);
         const registerRequest = new RegisterRequestDTO(req.body);
         const message = await authServices.register(registerRequest);
         const registerResponseDTO = new RegisterResponseDTO(message);

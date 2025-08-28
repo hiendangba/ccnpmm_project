@@ -19,6 +19,12 @@ const UserError = {
     statusCode: 400,
     errorCode: "MISSING_EMAIL",
   },
+  MISSING_MSSV: {
+    message: "MSSV is required",
+    statusCode: 400,
+    errorCode: "MISSING_MSSV",
+  }
+  ,
   MISSING_PASSWORD: {
     message: "Password is required",
     statusCode: 400,
