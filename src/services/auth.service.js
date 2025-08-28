@@ -10,7 +10,7 @@ const { json } = require("express");
 const { resetPassword } = require("../controllers/auth.controller");
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
-const authValidation = require("../validations/auth.validation");
+const {authValidation, validateFlowData} = require("../validations/auth.validation");
 
 
 
@@ -91,23 +91,139 @@ const authServices = {
     },
 
     forgotPassword : async (forgotRequest) => {
-        const user =  await User.findOne({ email : forgotRequest.email});
-        const flowId = nanoid(24); 
-        if (user){
-            const otp = generateOTP();
-            const otpHashed = await bcrypt.hash(otp, 10);  // salt la 10 
+        try{
+            const flowId = nanoid(24); 
+            const user =  await User.findOne({ email : forgotRequest.email});
+            if (user){
+                const otp = generateOTP();
+                const otpHashed = await bcrypt.hash(otp, 10);  // salt la 10 
+                const key = `fp:flow:${flowId}`;
+                await redisClient.set(
+                    key,
+                    JSON.stringify({
+                        userId: user.id,
+                        otpHashed : otpHashed,
+                        attempts: 0,
+                        maxAttempts: 3,
+                        resendCount: 0,
+                        maxResends: 3
+                    }),
+                    { EX: 600 }
+                );
+
+                await sendMail({
+                    to: user.email,
+                    subject: "Mật mã OTP, Quan trọng không chia sẽ cho người khác!",
+                    html: `
+                        <h3>Xin chào ${user.name}</h3>
+                        <p>Mã OTP của bạn là: <b>${otp}</b></p>
+                        <p>Mã OTP này sẽ hết hạn trong 10 phút.</p>
+                    `,
+                });
+                
+            }
+            return flowId;
+        }
+        catch (err){
+            console.error("ERROR:", err);
+            throw new AppError(UserError.INTERNAL_SERVER);
+        }
+    },
+
+    verifyOtpFB : async (verifyOtpRequest) =>{
+        try{
+            const {flowId, otp} = verifyOtpRequest;
             const key = `fp:flow:${flowId}`;
-            await redisClient.set(
-                key,
-                JSON.stringify({
-                    userId: user.id,
-                    otpHashed : otpHashed,
-                    attempts: 0,
-                    maxAttempts: 3,
-                    resendCount: 0
-                }),
-                { EX: 600 }
+            const raw = await redisClient.get(key);
+            if (!raw) throw new AppError (UserError.INVALID_FLOWID);
+
+            const data = validateFlowData(JSON.parse(raw));
+            
+            
+            if (data.attempts >= data.maxAttempts){
+                throw new AppError (UserError.OTP_MAX_ATTEMPTS);
+            }
+
+            const ok = await verifyOTPUtil (otp, data.otpHashed);
+            if (!ok){
+                data.attempts += 1;
+                await redisClient.set(key, JSON.stringify(data), { EX: 600 });
+                throw new AppError (UserError.OTP_INCORRECT);
+            }  
+
+            delete data.otpHashed;
+            await redisClient.set(key, JSON.stringify(data), { EX: 600 });
+            const resetToken = jwt.sign(
+                { sub: data.userId, flowId, purpose: "password_reset" },
+                process.env.JWT_SECRET,
+                { expiresIn: "10m" }
             );
+            return resetToken;
+        }
+        catch (err){
+            console.error("ERROR:", err);
+            if (err instanceof AppError) throw err;
+            throw new AppError(UserError.INTERNAL_SERVER);
+        }  
+    },
+
+    resetPassword : async (resetPassRequest) => {
+        try{
+            const {newPassword, resetPayload} = resetPassRequest;
+            if (resetPayload.purpose != "password_reset") throw new AppError (UserError.INVALID_RESET_TOKEN_PURPOSE);
+            const user =  await User.findOne({ _id : resetPayload.sub});
+            if (!user){
+                throw new AppError (UserError.INVALID_USER_INFO);
+            }
+            const key = `fp:flow:${resetPayload.flowId}`;
+            const raw = await redisClient.get(key);
+            if (!raw) throw new AppError (UserError.INVALID_FLOWID);
+
+
+            const passHashed = await bcrypt.hash(newPassword, 10);
+            
+            await User.updateOne({ _id: user.id }, { password: passHashed});
+            await redisClient.del(key); 
+            return;
+            
+        }
+        catch (err){
+            console.error("ERROR:", err);
+            if (err instanceof AppError) throw err;
+            throw new AppError(UserError.INTERNAL_SERVER);
+        }
+    }, 
+
+    resendOTP : async (resendOTPRequest) => {
+        try{
+            const {flowId} = resendOTPRequest;
+            const key = `fp:flow:${flowId}`;
+            const raw = await redisClient.get(key);
+            if (!raw) throw new AppError (UserError.INVALID_FLOWID);
+
+            const data = validateFlowData(JSON.parse(raw));
+
+            if (data.resendCount >= data.maxResends){
+                await redisClient.del(key);
+                throw new AppError(UserError.OTP_RESEND_MAX_ATTEMPTS);
+            }
+
+            const user = await User.findOne({_id : data.userId});
+            if (!user){
+                throw new AppError(UserError.INVALID_USER_INFO);
+            }
+
+            if (!user.email){
+                throw new AppError(UserError.INVALID_EMAIL);
+            }
+
+            const otp = generateOTP();
+            const otpHashed = await bcrypt.hash(otp, 10);
+
+            data.resendCount += 1;
+            data.otpHashed  = otpHashed;
+            data.attempts = 0;
+
             await sendMail({
                 to: user.email,
                 subject: "Mật mã OTP, Quan trọng không chia sẽ cho người khác!",
@@ -117,69 +233,18 @@ const authServices = {
                     <p>Mã OTP này sẽ hết hạn trong 10 phút.</p>
                 `,
             });
-        }
-        return flowId;
-    },
-
-    verifyOtpFB : async (verifyOtpRequest) =>{
-        const {flowId, otp} = verifyOtpRequest;
-        const key = `fp:flow:${flowId}`;
-        const raw = await redisClient.get(key);
-        if (!raw) throw new Error ("Phiên quên mật khẩu của bạn không hợp lệ hoặc đã hết.");
-
-        const data = JSON.parse(raw);
-        if (data.attempts > data.maxAttempts){
-            throw new Error ("Vượt quá số lần thử OTP.");
-        }
-
-        if (!data.otpHashed) {
-            throw new Error ("Lỗi không tìm thấy OTP");
-        }
-
-        const ok = await verifyOTPUtil (otp, data.otpHashed);
-        if (!ok){
-            data.attempts += 1;
-            await redisClient.set(key, JSON.stringify(data), { EX: 600 });
-            throw new Error ("OTP không chính xác.")
-        }  
-
-        delete data.otpHashed;
-        await redisClient.set(key, JSON.stringify(data), { EX: 600 });
-        const resetToken = jwt.sign(
-            { sub: data.userId, flowId, purpose: "password_reset" },
-            process.env.JWT_SECRET,
-            { expiresIn: "10m" }
-        );
-        return resetToken;
-    },
-
-    resetPassword : async (resetPassRequest, cookies) => {
-        const newPass = resetPassRequest.newPassword;
-        const resetToken = cookies.resetPass_token;
-        const payload = jwt.verify(resetToken, process.env.JWT_SECRET);
-        if (payload.purpose != "password_reset") throw new Error("Mục đích trong reset token không hợp lệ.");
-        const user =  await User.findOne({ _id : payload.sub});
-        if (!user){
-            throw new Error ("Thông tin người dùng không hợp lệ.");
-        }
-        const key = `fp:flow:${payload.flowId}`;
-        const raw = await redisClient.get(key);
-        if (!raw) throw new Error ("Phiên quên mật khẩu của bạn không hợp lệ hoặc đã hết."); 
-
-
-        const passHashed = await bcrypt.hash(newPass, 10);
         
-        const updateResult = await User.updateOne({ _id: payload.sub }, { password: passHashed});
-        if (updateResult.modifiedCount === 0){
-            return false;
-        }
-        else{
-            await redisClient.del(key); 
-            return true;
-        }
-    }, 
+            await redisClient.set(key, JSON.stringify(data), { EX: 600 });
 
+            return;
 
+        }
+        catch(err){
+            console.error("ERROR: ", err);
+            if (err instanceof AppError) throw err;
+            throw new AppError (UserError.INTERNAL_SERVER);
+        }
+    }
 
 };
 module.exports = authServices;

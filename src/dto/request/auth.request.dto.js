@@ -38,9 +38,16 @@ class VerifyOTPFB {
 }
 
 class ResetPassword {
-  constructor(body){
+  constructor(body, resetPayload){
     this.newPassword = body.newPassword;
+    this.resetPayload = resetPayload;
   }
 }
 
-module.exports = { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword };
+class ResendOTP {
+  constructor(body){
+    this.flowId = body.flowId;
+  }
+}
+
+module.exports = { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword, ResendOTP };

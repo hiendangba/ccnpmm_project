@@ -23,4 +23,32 @@ class VerifyResponseDTO {
     this.address = user.address;  
   }
 }
-module.exports = { LoginResponseDTO, RegisterResponseDTO, VerifyResponseDTO };
+
+class ForgotPasswordResponseDTO {
+  constructor(flowId, tryTime, message ){
+    this.flowId = flowId,
+    this.tryTime = tryTime,
+    this.message = message
+  }
+}
+
+class VerifyOTPFBResponseDTO {
+  constructor(message){
+    this.message = message
+  }
+}
+
+class ResetPasswordResponseDTO {
+  constructor(message){
+    this.message = message
+  }
+}
+
+class ResendOTPResponseDTO {
+  constructor(message){
+    this.message = message
+  }
+}
+
+
+module.exports = { LoginResponseDTO, RegisterResponseDTO, VerifyResponseDTO, ForgotPasswordResponseDTO, VerifyOTPFBResponseDTO, ResetPasswordResponseDTO, ResendOTPResponseDTO };
