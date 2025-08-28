@@ -11,9 +11,6 @@ class RegisterRequestDTO {
     this.name = body.name;
     this.email = body.email;
     this.password = body.password;
-    this.age = body.age;
-    this.gender = body.gender;
-    this.address = body.address;
   }
 }
 

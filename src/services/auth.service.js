@@ -6,8 +6,6 @@ const generateOTP = require("../utils/generateOTP");
 const redisClient = require("../utils/redisClient");
 const verifyOTPUtil = require("../utils/verifyOTPUtil");
 const { nanoid } = require('nanoid');
-const { json } = require("express");
-const { resetPassword } = require("../controllers/auth.controller");
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {authValidation, validateFlowData} = require("../validations/auth.validation");
@@ -49,6 +47,7 @@ const authServices = {
 
 
     verifyOTP: async(verifyOTP) =>{
+        console.log(verifyOTP);
         const storedOTP = await redisClient.get(`otp:${verifyOTP.email}`);
         if (!storedOTP) throw new AppError(UserError.OTP_INVALID_OR_EXPIRED);
 

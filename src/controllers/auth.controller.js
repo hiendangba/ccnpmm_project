@@ -2,9 +2,11 @@ const authServices = require("../services/auth.service");
 const { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword, ResendOTP } = require("../dto/request/auth.request.dto");
 const { ForgotPasswordResponseDTO, VerifyOTPFBResponseDTO, ResetPasswordResponseDTO, RegisterResponseDTO, VerifyResponseDTO, LoginResponseDTO, ResendOTPResponseDTO  } = require("../dto/response/auth.response.dto");
 const { authMiddleware } = require("../middlewares/auth.middleware");
+
 const authController = {
   register: async (req, res) => {
       try {
+        console.log(req.body);
         const registerRequest = new RegisterRequestDTO(req.body);
         const message = await authServices.register(registerRequest);
         const registerResponseDTO = new RegisterResponseDTO(message);
@@ -29,7 +31,13 @@ const authController = {
       try {
         const loginRequest = new LoginRequestDTO(req.body);
         const { user_id, token, refreshToken } = await authServices.login(loginRequest);
-        const loginResponse = new LoginResponseDTO(user_id, token, refreshToken);
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'Strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
+        });
+        const loginResponse = new LoginResponseDTO(user_id, token);
         res.status(200).json(loginResponse);
       } catch (err) {
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });

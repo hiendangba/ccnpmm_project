@@ -8,6 +8,11 @@ const cookieParser = require('cookie-parser');
 const cors = require("cors");
 const PORT = 3000;
 dotenv.config();
+app.use(cors({
+  origin: "http://localhost:5173", // cho phép frontend gọi
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(morgan('combined'))
 app.use(express.json());
 app.use(cookieParser());
