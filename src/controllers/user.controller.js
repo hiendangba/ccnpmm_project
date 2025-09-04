@@ -7,13 +7,13 @@ const AppError = require("../errors/AppError");
 const userController = {
   getProfile: async (req, res) => {
     try {
-      console.log(req.user); 
       const result = new UserResponse(await userService.getProfile(req.user));
       res.status(200).json(result);
     } catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
   },
+
   updateProfile: async (req, res) => {
     try {
       const updateRequest = new UpdateUserRequest(req.body);
@@ -34,12 +34,22 @@ const userController = {
       const result = new UserResponse(await userService.updateProfile(updateRequest, avatarUrl, req.user.id));
       res.status(200).json(result);
     } catch (err) {
-    res.status(err.statusCode || 500).json({
-        message: err.message || "Có lỗi xảy ra",
-        status: err.statusCode || 500,
-        errorCode: err.errorCode || "INTERNAL_ERROR"
-    });
-}
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    };
+  },
+
+  getAllUsers: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      const users = await userService.getAllUsers(page, limit);
+
+      const listUserResponse = users.map(user => new UserResponse(user));
+      res.status(200).json({users: listUserResponse});
+
+    }catch (err) {
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    };
   }
 };
 

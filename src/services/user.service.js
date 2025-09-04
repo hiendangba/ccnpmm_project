@@ -14,12 +14,12 @@ const userServices = {
             if (!foundUser) {
                 throw new AppError(UserError.NOT_FOUND);
             }
-            console.log(foundUser);
             return foundUser;
         }catch (err){
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
+
     updateProfile: async (updateRequest, avatarUrl, id) => {
         try{
             const user = await User.findById(id);
@@ -42,5 +42,21 @@ const userServices = {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
+
+    getAllUsers: async(page, limit) =>{
+        try{
+            const skip = (page - 1) * limit;
+            const users = await User.find()
+                                .skip(skip)
+                                .limit(limit);
+            if(!users){
+                throw new AppError(UserError.NOT_FOUND);
+            }
+            return users
+        }catch (err){
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    }
+
 };
 module.exports = userServices;
