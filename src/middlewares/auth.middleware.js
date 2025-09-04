@@ -1,16 +1,18 @@
 const jwt = require("jsonwebtoken");
+const AuthError = require("../errors/auth.error");
+const AppError = require("../errors/AppError");
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // "Bearer token"
   if (!token) {
-    return res.status(401).json({ message: "Không có token, từ chối truy cập" });
+    throw new AppError(AuthError.NO_TOKEN);
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // gắn user vào request
     next();
   } catch (err) {
-    return res.status(403).json({ message: "Token không hợp lệ" });
+    throw err instanceof AppError ? err : AppError.fromError(err);
   }
 };
 

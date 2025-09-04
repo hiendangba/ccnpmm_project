@@ -45,20 +45,40 @@ const UserError = {
     statusCode: 400,
     errorCode: "PASSWORD_TOO_SHORT",
   },
-  AGE_TOO_YOUNG: {
-    message: "User must be at least 18 years old",
+  INVALID_AGE:{
+    message: "Age must be a number between 18 and 100",
     statusCode: 400,
-    errorCode: "AGE_TOO_YOUNG",
+    errorCode: "INVALID_AGE",
+  },
+  BIO_TOO_LONG: {
+    message: "Bio must not exceed 500 characters",
+    statusCode: 400,
+    errorCode: "BIO_TOO_LONG",
+  },
+  MSSV_EXISTS: {
+    statusCode: 400,
+    message: "MSSV đã tồn tại",
+    errorCode: "MSSV_EXISTS"
+  },
+  REFRESH_TOKEN_EXPIRED: {
+    statusCode: 401,
+    message: "Refresh token đã hết hạn",
+    errorCode: "REFRESH_TOKEN_EXPIRED"
+  },
+  REFRESH_TOKEN_INVALID: {
+      statusCode: 401,
+      message: "Refresh token không hợp lệ",
+      errorCode: "REFRESH_TOKEN_INVALID"
+  },
+  REFRESH_TOKEN_ERROR: {
+      statusCode: 500,
+      message: "Có lỗi khi xử lý refresh token",
+      errorCode: "REFRESH_TOKEN_ERROR"
   },
   OTP_INVALID_OR_EXPIRED: {
     message: "OTP is invalid or has expired",
     statusCode: 400,
     errorCode: "OTP_INVALID_OR_EXPIRED",
-  },
-  OTP_NOT_MATCH: {
-    message: "OTP does not match",
-    statusCode: 400,
-    errorCode: "OTP_NOT_MATCH",
   },
   MSSV_NOT_FOUND: {
     message: "MSSV không tồn tại",
@@ -109,7 +129,7 @@ const UserError = {
     message: "Thông tin người dùng không hợp lệ.",
     statusCode: 400,
     errorCode: "INVALID_USER_INFO"
-  }
+  },
 };
 
 module.exports = UserError;

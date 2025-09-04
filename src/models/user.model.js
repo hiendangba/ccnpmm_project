@@ -31,6 +31,13 @@ const userSchema = new mongoose.Schema({
   },
   address:{
     type: String,
+  },
+  bio:{
+    type: String,
+    maxlength: 500
+  },
+  avatar:{
+    type: String,
   }
 }, {
   timestamps: true // tự động tạo createdAt và updatedAt

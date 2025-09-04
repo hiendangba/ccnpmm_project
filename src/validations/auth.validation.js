@@ -70,4 +70,28 @@ function validateFlowData(data) {
   return data; // nếu ok thì return lại cho chắc
 }
 
-module.exports = {authValidation,validateFlowData};
+function updateValidation(updateRequest) {
+  const { name, age, gender, bio  } = updateRequest;
+  
+  if (name !== undefined && name !== null && name.trim() === "") {
+      throw new AppError(UserError.MISSING_NAME);
+  }
+
+   if (age !== undefined && age !== null) {
+      const ageNumber = Number(age);
+      if (isNaN(ageNumber) || ageNumber < 18 || ageNumber > 100) {
+          throw new AppError(UserError.INVALID_AGE);
+      }
+  }
+  
+  if (gender !== undefined && gender !== null && !["nam", "nữ", "khác"].includes(gender)) {
+      throw new AppError(UserError.INVALID_GENDER);
+  }  
+  
+  if (bio !== undefined && bio !== null && bio.length > 500) {
+      throw new AppError(UserError.BIO_TOO_LONG);
+  }
+}
+
+
+module.exports = {authValidation,validateFlowData, updateValidation};
