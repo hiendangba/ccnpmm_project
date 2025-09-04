@@ -3,7 +3,7 @@ class UserResponse {
         this.name = user.name;
         this.mssv = user.mssv;
         this.email = user.email;
-        this.age = user.age ?? null;
+        this.dateOfBirth = user.dateOfBirth ?? null;
         this.bio = user.bio ?? null;
         this.gender = user.gender ?? null;
         this.address = user.address ?? null;

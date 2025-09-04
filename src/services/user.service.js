@@ -29,7 +29,7 @@ const userServices = {
             updateValidation(updateRequest);  
             user.name = updateRequest.name ?? user.name;
             user.email = updateRequest.email ?? user.email;
-            user.age = updateRequest.age ?? user.age;
+            user.dateOfBirth = updateRequest.dateOfBirth ?? user.age;
             user.bio = updateRequest.bio ?? user.bio;
             user.address = updateRequest.address ?? user.address;
             user.gender = updateRequest.gender ?? user.gender;

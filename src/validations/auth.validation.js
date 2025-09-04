@@ -71,17 +71,26 @@ function validateFlowData(data) {
 }
 
 function updateValidation(updateRequest) {
-  const { name, age, gender, bio  } = updateRequest;
+  const { name, dateOfBirth, gender, bio  } = updateRequest;
   
   if (name !== undefined && name !== null && name.trim() === "") {
       throw new AppError(UserError.MISSING_NAME);
   }
 
-   if (age !== undefined && age !== null) {
-      const ageNumber = Number(age);
-      if (isNaN(ageNumber) || ageNumber < 18 || ageNumber > 100) {
-          throw new AppError(UserError.INVALID_AGE);
+  if (dateOfBirth !== undefined && dateOfBirth !== null) {
+      const today = new Date();
+      const birthDate = new Date(dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      // Nếu chưa tới sinh nhật năm nay → trừ 1 tuổi
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
       }
+
+      if (age < 18 || age > 100) {
+        throw new AppError(UserError.INVALID_AGE);
+    }
   }
   
   if (gender !== undefined && gender !== null && !["nam", "nữ", "khác"].includes(gender)) {
