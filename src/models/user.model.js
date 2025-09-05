@@ -6,10 +6,21 @@ const userSchema = new mongoose.Schema({
     required: true,
     maxlength: 100        
 },
-  age: {
-    type: Number,
-    min: [18, 'Tuổi phải từ 18 trở lên'],
-    max: [100, 'Tuổi không được vượt quá 100']             
+  dateOfBirth: {
+    type: Date,
+    validate: {
+        validator: function(value) {
+          if (!value) return false;
+          const today = new Date();
+          let  age = today.getFullYear() - value.getFullYear();
+          const m = today.getMonth() - value.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < value.getDate())) {
+            age--; // chưa tới sinh nhật năm nay
+          }
+          return age >= 18 && age <= 100;
+        },
+        message: props => `Tuổi phải từ 18 đến 100! Ngày sinh bạn nhập: ${props.value.toDateString()}`
+      }  
   },
   email: {
     type: String,
@@ -30,6 +41,13 @@ const userSchema = new mongoose.Schema({
     enum: ['nam', 'nữ', 'khác']
   },
   address:{
+    type: String,
+  },
+  bio:{
+    type: String,
+    maxlength: 500
+  },
+  avatar:{
     type: String,
   }
 }, {

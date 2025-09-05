@@ -14,79 +14,204 @@ const {authValidation, validateFlowData} = require("../validations/auth.validati
 
 const authServices = {
     register: async (registerRequest) => {
+        try{
+            const exists = await User.findOne({ email:registerRequest.email });
 
-        const exists = await User.findOne({ email:registerRequest.email });
+            const existsMssv = await User.findOne({ mssv:registerRequest.mssv });
+            
+            if (exists) {
+                throw new AppError(UserError.EMAIL_EXISTS);
+            }
 
-        if (exists) {
-            throw new AppError(UserError.EMAIL_EXISTS);
-        }
+            if (existsMssv) {
+                throw new AppError(UserError.MSSV_EXISTS);
+            }
+            //kiểm tra dữ liệu hợp lệ
+            authValidation(registerRequest);  
+           
+            // chuẩn hóa email
+            registerRequest.email = registerRequest.email.toLowerCase().trim();
 
-        //kiểm tra dữ liệu hợp lệ
-        authValidation(registerRequest);  
+            const otp = generateOTP();
+            const flowId = nanoid(24); 
+            const otpHashed = await bcrypt.hash(otp, 10);
+            const key = `register:flow:${flowId}`;
 
-        const otp = generateOTP();
+            // Lưu thông tin đăng ký và OTP đã hash vào Redis
+            await redisClient.set(
+                key,
+                JSON.stringify({
+                user: registerRequest,
+                otpHashed,
+                attempts: 0,
+                maxAttempts: 3,
+                resendCount: 0,
+                maxResends: 3
+                }),
+                { EX: 600 } // 10 phút
+            );
 
-        // Lưu OTP vào Redis
-        await redisClient.set(`otp:${registerRequest.email}`, otp, { EX: 600 });
-        // Lưu user tạm vào Redis
-        await redisClient.set(`pendingUser:${registerRequest.email}`, JSON.stringify(registerRequest), { EX: 600 });
-        
-        sendMail({
-            to: registerRequest.email,
-            subject: "Chào mừng bạn đăng ký!",
-            html: `
+            await sendMail({
+                to: registerRequest.email,
+                subject: "Xác minh đăng ký tài khoản",
+                html: `
                 <h3>Xin chào ${registerRequest.name}</h3>
                 <p>Cảm ơn bạn đã đăng ký tài khoản.</p>
                 <p>Mã OTP của bạn là: <b>${otp}</b></p>
                 <p>Mã OTP này sẽ hết hạn trong 10 phút.</p>
-            `,
+                `,
             });
-
-        return  "OTP đã được gửi, vui lòng kiểm tra email";
+            return { message: "OTP đã được gửi, vui lòng kiểm tra email", flowId,   expiresIn: 600 };
+        }catch (err){
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
     },
 
 
     verifyOTP: async(verifyOTP) =>{
-        console.log(verifyOTP);
-        const storedOTP = await redisClient.get(`otp:${verifyOTP.email}`);
-        if (!storedOTP) throw new AppError(UserError.OTP_INVALID_OR_EXPIRED);
+        try{
+            const key = `register:flow:${verifyOTP.flowId}`;
 
-        if (storedOTP !== verifyOTP.otp) throw new AppError(UserError.OTP_NOT_MATCH);
+            // 1. Lấy data trong Redis
+            const raw = await redisClient.get(key);
+            if (!raw) {
+                throw new AppError(UserError.OTP_INVALID_OR_EXPIRED);
+            }
 
-        const pendingUserData = await redisClient.get(`pendingUser:${verifyOTP.email}`);
+            const data = JSON.parse(raw);
+
+            // 2. Check số lần nhập sai
+            if (data.attempts >= data.maxAttempts) {
+                throw new AppError(UserError.OTP_MAX_ATTEMPTS);
+            }
+
+            // 3. Verify OTP
+            const ok = await bcrypt.compare(verifyOTP.otp, data.otpHashed);
+
+            if (!ok) {
+                data.attempts += 1;
+                await redisClient.set(key, JSON.stringify(data), { EX: 600 }); // cập nhật lại
+                throw new AppError(UserError.OTP_INCORRECT);
+            }
+
+            // 4. Tạo user chính thức
+            const pendingUser = data.user;
+            const hashedPassword = await bcrypt.hash(pendingUser.password, 10);
+            const newUser = new User({
+                ...pendingUser,
+                password: hashedPassword
+            });
+
+            await newUser.save();
+            await redisClient.del(key);
+
+            return newUser;
+        }catch (err){
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
         
-        const pendingUser = JSON.parse(pendingUserData);
-        const hashedPassword = await bcrypt.hash(pendingUser.password, 10);
-        const newUser = new User({ ...pendingUser, password: hashedPassword });
-       
-        await newUser.save();
+    },
 
-        // Xoá dữ liệu tạm thời khỏi Redis
-        await redisClient.del(`otp:${verifyOTP.email}`);
-        await redisClient.del(`pendingUser:${verifyOTP.email}`);
+    resendOTPRegister : async (resendOTP) => {
+        try{
+            const key = `register:flow:${resendOTP.flowId}`;
+            const raw = await redisClient.get(key);
+            if (!raw) throw new AppError(UserError.INVALID_FLOWID);
 
-        return newUser;
+            const data = JSON.parse(raw);
+
+            if (data.resendCount >= data.maxResends) {
+                await redisClient.del(key);
+                throw new AppError(UserError.OTP_RESEND_MAX_ATTEMPTS);
+            }
+
+            const otp = generateOTP();
+            const otpHashed = await bcrypt.hash(otp, 10);
+
+            data.resendCount += 1;
+            data.otpHashed = otpHashed;
+            data.attempts = 0; // reset lại số lần nhập sai
+
+            await sendMail({
+                to: data.user.email,
+                subject: "Xác minh đăng ký tài khoản",
+                html: `
+                    <h3>Xin chào ${data.user.name}</h3>
+                    <p>Mã OTP của bạn là: <b>${otp}</b></p>
+                    <p>Mã OTP này sẽ hết hạn trong 10 phút.</p>
+                `,
+            });
+
+            const ttl = await redisClient.ttl(key);
+
+            if (ttl > 0) {
+                await redisClient.set(key, JSON.stringify(data), { EX: ttl });
+            } else {
+                // fallback: nếu TTL = -1 (không có expire) thì đặt lại 600s
+                await redisClient.set(key, JSON.stringify(data), { EX: 600 });
+            }
+            return { message: "OTP mới đã được gửi" };
+        }catch(err){
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+        
     },
 
     login: async (loginRequest) => {
-        const user = await User.findOne({ mssv: loginRequest.mssv });
-        if (!user) throw new AppError(UserError.MSSV_NOT_FOUND);
+        try
+        {
+            const user = await User.findOne({ mssv: loginRequest.mssv });
+            if (!user) throw new AppError(UserError.MSSV_NOT_FOUND);
 
-        const isMatch = await bcrypt.compare(loginRequest.password, user.password);
-        if (!isMatch) throw new AppError(UserError.INVALID_PASSWORD);
+            const isMatch = await bcrypt.compare(loginRequest.password, user.password);
+            if (!isMatch) throw new AppError(UserError.INVALID_PASSWORD);
 
-        const token = jwt.sign(
-        { id: user._id, mssv: user.mssv },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES }
-        );
+            const token = jwt.sign(
+                { id: user._id, mssv: user.mssv },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
 
-        const refreshToken = jwt.sign(
-            { id: user._id, mssv: user.mssv },
-            process.env.JWT_REFRESH_SECRET,
-            { expiresIn: process.env.JWT_REFRESH_EXPIRES}
-        );
-        return { user_id: user._id, token, refreshToken };
+            const refreshToken = jwt.sign(
+                { id: user._id, mssv: user.mssv },
+                process.env.JWT_REFRESH_SECRET,
+                { expiresIn: process.env.JWT_REFRESH_EXPIRES}
+            );
+
+            await redisClient.set(
+                `refresh:${user._id}`,
+                refreshToken,
+                "EX",
+                7 * 24 * 60 * 60 // 7 ngày
+            );
+            return { user_id: user._id, token, refreshToken };
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
+
+    refreshToken: async (refreshToken) => {
+        try {
+            // 1. Xác thực refreshToken
+            const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+            // 2. Kiểm tra refreshToken trong Redis
+            const savedToken = await redisClient.get(`refresh:${decoded.id}`);
+            if (!savedToken || savedToken !== refreshToken) {
+                throw new AppError(UserError.REFRESH_TOKEN_INVALID);
+            }
+
+            // 3. Tạo access token mới
+            const newAccessToken = jwt.sign(
+                { id: decoded.id, mssv: decoded.mssv },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
+
+            return { token: newAccessToken };
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
     },
 
     forgotPassword : async (forgotRequest) => {

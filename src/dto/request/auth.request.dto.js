@@ -16,7 +16,7 @@ class RegisterRequestDTO {
 
 class VerifyOTP {
   constructor(body) {
-    this.email = body.email;
+    this.flowId = body.flowId;
     this.otp = body.otp;
   }
 }

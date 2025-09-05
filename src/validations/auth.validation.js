@@ -70,4 +70,37 @@ function validateFlowData(data) {
   return data; // nếu ok thì return lại cho chắc
 }
 
-module.exports = {authValidation,validateFlowData};
+function updateValidation(updateRequest) {
+  const { name, dateOfBirth, gender, bio  } = updateRequest;
+  
+  if (name !== undefined && name !== null && name.trim() === "") {
+      throw new AppError(UserError.MISSING_NAME);
+  }
+
+  if (dateOfBirth !== undefined && dateOfBirth !== null) {
+      const today = new Date();
+      const birthDate = new Date(dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      // Nếu chưa tới sinh nhật năm nay → trừ 1 tuổi
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 18 || age > 100) {
+        throw new AppError(UserError.INVALID_AGE);
+    }
+  }
+  
+  if (gender !== undefined && gender !== null && !["nam", "nữ", "khác"].includes(gender)) {
+      throw new AppError(UserError.INVALID_GENDER);
+  }  
+  
+  if (bio !== undefined && bio !== null && bio.length > 500) {
+      throw new AppError(UserError.BIO_TOO_LONG);
+  }
+}
+
+
+module.exports = {authValidation,validateFlowData, updateValidation};

@@ -1,15 +1,13 @@
 const authServices = require("../services/auth.service");
 const { LoginRequestDTO, RegisterRequestDTO, VerifyOTP, ForgotPassword, VerifyOTPFB, ResetPassword, ResendOTP } = require("../dto/request/auth.request.dto");
 const { ForgotPasswordResponseDTO, VerifyOTPFBResponseDTO, ResetPasswordResponseDTO, RegisterResponseDTO, VerifyResponseDTO, LoginResponseDTO, ResendOTPResponseDTO  } = require("../dto/response/auth.response.dto");
-const { authMiddleware } = require("../middlewares/auth.middleware");
 
 const authController = {
   register: async (req, res) => {
       try {
-        console.log(req.body);
         const registerRequest = new RegisterRequestDTO(req.body);
-        const message = await authServices.register(registerRequest);
-        const registerResponseDTO = new RegisterResponseDTO(message);
+        const result = await authServices.register(registerRequest);
+        const registerResponseDTO = new RegisterResponseDTO(result);
         res.status(201).json(registerResponseDTO);
       } catch (err) {
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
@@ -27,6 +25,18 @@ const authController = {
       }
   },
 
+  resendOTPRegister: async (req, res) => {
+    try {
+      const resendOTPRequest = new ResendOTP (req.body); 
+      const response = await authServices.resendOTPRegister(resendOTPRequest);
+      const result = new ResendOTPResponseDTO (response.message)
+      res.status(200).json(result);
+    }
+    catch (err){
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
+  },
+
   login: async (req, res) => {
       try {
         const loginRequest = new LoginRequestDTO(req.body);
@@ -42,6 +52,21 @@ const authController = {
       } catch (err) {
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
       }
+  },
+
+  refreshToken: async (req, res) => {
+    try {
+      const refreshToken = req.cookies.refreshToken; // lấy từ cookie
+      if (!refreshToken) {
+        return res.status(401).json({ message: "No refresh token provided" });
+      }
+
+      const { token } = await authServices.refreshToken(refreshToken);
+
+      res.status(200).json({ token });
+    } catch (err) {
+        res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
   },
 
   forgotPassword : async (req, res) => {
