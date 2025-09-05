@@ -42,10 +42,10 @@ const userController = {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
-      const users = await userService.getAllUsers(page, limit);
+      const {users, total} = await userService.getAllUsers(page, limit);
 
       const listUserResponse = users.map(user => new UserResponse(user));
-      res.status(200).json({users: listUserResponse});
+      res.status(200).json({users: listUserResponse, total});
 
     }catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });

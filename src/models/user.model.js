@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
         validator: function(value) {
           if (!value) return false;
           const today = new Date();
-          const age = today.getFullYear() - value.getFullYear();
+          let  age = today.getFullYear() - value.getFullYear();
           const m = today.getMonth() - value.getMonth();
           if (m < 0 || (m === 0 && today.getDate() < value.getDate())) {
             age--; // chưa tới sinh nhật năm nay

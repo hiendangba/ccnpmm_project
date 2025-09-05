@@ -26,10 +26,16 @@ const userServices = {
             if (!user) {
                 throw new AppError(UserError.NOT_FOUND);
             }
-            updateValidation(updateRequest);  
+            console.log(user)
+            console.log(updateRequest)
+            updateValidation(updateRequest); 
+            console.log(updateRequest.dateOfBirth) 
             user.name = updateRequest.name ?? user.name;
             user.email = updateRequest.email ?? user.email;
-            user.dateOfBirth = updateRequest.dateOfBirth ?? user.age;
+            user.dateOfBirth = updateRequest.dateOfBirth 
+            ? new Date(updateRequest.dateOfBirth) 
+            : user.dateOfBirth;            
+            console.log(user.dateOfBirth)
             user.bio = updateRequest.bio ?? user.bio;
             user.address = updateRequest.address ?? user.address;
             user.gender = updateRequest.gender ?? user.gender;
@@ -49,10 +55,15 @@ const userServices = {
             const users = await User.find()
                                 .skip(skip)
                                 .limit(limit);
+            const total = await User.countDocuments();
+
             if(!users){
                 throw new AppError(UserError.NOT_FOUND);
             }
-            return users
+            return {
+                users,
+                total
+                };
         }catch (err){
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
