@@ -1,5 +1,8 @@
+const { image } = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
+const PostError = require("../errors/post.error.enum");
+const mongoose = require("mongoose");
 
 function authValidation(registerRequest) {
   const { name, email, password, mssv  } = registerRequest;
@@ -102,5 +105,35 @@ function updateValidation(updateRequest) {
   }
 }
 
+function validatePostNew (data) {
+  const { userId, content, images, originalPostId, rootPostId }  = data;
+  if (!userId){
+    throw new AppError(PostError.USER_ID_REQUIRED);
+  }
+  if ((!content || content.trim() === "") && (!images || image.length === 0)){
+    throw new AppError(PostError.POST_EMPTY);
+  }
+  if (content && typeof content !== "string"){
+    throw new AppError(PostError.INVALID_CONTENT);
+  }
+  if (images && Array.isArray(images)){
+    throw new AppError(PostError.INVALID_IMAGES);
+  }
+  if (Array.isArray(images)){
+    for (const img of images){
+      if (typeof img !== "string"){
+        throw new AppError(PostError.INVALID_IMAGE_URL);
+      }
+    }
+  }
+  if (originalPostId && !mongoose.Types.ObjectId.isValid(originalPostId)){
+    throw new AppError(PostError.INVALID_ORIGINAL_POST_ID);
+  }
+  if (rootPostId && !mongoose.Types.ObjectId.isValid(rootPostId)){
+    throw new AppError(PostError.INVALID_ROOT_POST_ID);
+  }
+  
+};
 
-module.exports = {authValidation,validateFlowData, updateValidation};
+
+module.exports = {authValidation,validateFlowData, updateValidation, validatePostNew};

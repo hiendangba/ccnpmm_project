@@ -7,4 +7,15 @@ class UpdateUserRequest {
         this.address = body.address ?? null;
     }
 }
-module.exports = UpdateUserRequest;
+
+class PostNewRequest{
+    constructor(body){
+        this.userId = body.userId ?? null;
+        this.content = body.content ?? "";
+        this.images = body.images ?? [];
+        this.originalPostId = body.originalPostId ?? null;
+        this.rootPostId = body.rootPostId ?? null;
+    }
+}
+
+module.exports = { UpdateUserRequest, PostNewRequest } ;
