@@ -32,24 +32,28 @@ const messageServices = {
         }
     },
 
-    sendMessage: async (conversationId,senderId,content,type,attachments) => {
+    sendMessage: async (sendMessageRequest, senderId) => {
         try{
-            const conversation = await Conversation.findById(conversationId);
+            console.log(sendMessageRequest)
+            console.log(senderId)
+            console.log(sendMessageRequest.conversationId)
+            
+            const conversation = await Conversation.findById(sendMessageRequest.conversationId);
             if (!conversation.members.includes(senderId)) {
                 throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
             }
 
-            if (!content && (!attachments || attachments.length === 0)) {
+            if (!sendMessageRequest.content && (!sendMessageRequest.attachments || sendMessageRequest.attachments.length === 0)) {
                 throw new AppError(MessageError.EMPTY_MESSAGE);
             }
 
             const message = new Message({
-                conversationId,
-                senderId,
-                content,
-                readBy: [senderId], // ✅ người gửi auto đã đọc
-                type: type || "text",
-                attachments: attachments ? [attachments] : []
+                conversationId: sendMessageRequest.conversationId,
+                senderId: senderId,
+                content: sendMessageRequest.content,
+                readBy: [senderId], // người gửi auto đã đọc
+                type: sendMessageRequest.type || "text",
+                attachments: sendMessageRequest.attachments || []
             });
             
             await message.save();
@@ -110,7 +114,7 @@ const messageServices = {
             if (!conversation.members.includes(userId)) {
                 throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
             }
-            
+
             // Nếu user chưa có trong danh sách đã đọc thì mới thêm
             if (!message.readBy.includes(userId)) {
                 message.readBy.push(userId);

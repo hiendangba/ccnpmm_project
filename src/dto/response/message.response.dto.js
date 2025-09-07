@@ -8,7 +8,6 @@ class MessageResponse {
     this.reactions = message.reactions || []; 
     this.isDeletedForAll = message.isDeletedForAll;
     this.deletedBy = message.deletedBy || [];
-    this.edited = message.edited;
     this.readBy = message.readBy;
     this.createdAt = message.createdAt;
     this.updatedAt = message.updatedAt;
