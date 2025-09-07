@@ -1,6 +1,6 @@
 const userService = require("../services/user.service");
 const UserResponse = require("../dto/response/user.response.dto");
-const UpdateUserRequest = require("../dto/request/user.request.dto");
+const {UpdateUserRequest, PostNewRequest} = require("../dto/request/user.request.dto");
 const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
@@ -50,6 +50,18 @@ const userController = {
     }catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     };
+  },
+
+  postNew: async (req, res) => {
+    try{
+      const postNewRequest = new PostNewRequest(req.body);
+      await userService.postNew(postNewRequest);
+      const result = { message: "Đăng bài thành công." }
+      res.status(200).json(result); // trong try thi luon luon tra ve trang thai la thanh cong
+    }
+    catch (err) {
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
+    }
   }
 };
 

@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const Post = require("../models/post.model");
 const redisClient = require("../utils/redisClient");
 const { nanoid } = require('nanoid');
 const AppError = require("../errors/AppError");
@@ -67,7 +68,25 @@ const userServices = {
         }catch (err){
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
-    }
+    },
+
+    postNew: async ( postNewRequest ) => {
+        try {
+            const newPost = new Post({
+                userId: postNewRequest.userId,
+                content: postNewRequest.content || "",
+                images: postNewRequest.images || [],
+                originalPostId: postNewRequest.originalPostId || null,
+                rootPostId: postNewRequest.rootPostId || null
+            });
+
+           await newPost.save();
+
+        }
+        catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
 
 };
 module.exports = userServices;
