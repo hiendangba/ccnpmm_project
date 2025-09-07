@@ -1,28 +1,17 @@
 const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
 const AppError = require("../errors/AppError");
+const MessageError = require("../errors/message.error");
+
 
 const messageServices = {
-    getOrCreateOneToOne: async (senderId, receiverId, page, limit) => {
+    getMessageOneToOne: async (senderId, receiverId, page, limit) => {
         try{
             // 1. Tìm conversation 1-1
             let conversation = await Conversation.findOne({
             isGroup: false,
             members: { $all: [senderId, receiverId], $size: 2 }
             });
-
-            if (!conversation) {
-            // Nếu chưa có conversation, tạo mới
-            conversation = new Conversation({
-                isGroup: false,
-                members: [senderId, receiverId],
-                createdBy: senderId
-            });
-            await conversation.save();
-
-            // Chưa có tin nhắn nào
-            return { messages: [], totalMessages: 0 };
-            }
 
             // 2. Tính offset
             const skip = (page - 1) * limit;
@@ -37,10 +26,101 @@ const messageServices = {
             const totalMessages = await Message.countDocuments({ conversationId: conversation._id });
 
             // 5. Trả về cùng lúc
-            return { messages, totalMessages };
+            return { messages, totalMessages, conversationId: conversation._id };
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
+
+    sendMessage: async (conversationId,senderId,content,type,attachments) => {
+        try{
+            const conversation = await Conversation.findById(conversationId);
+            if (!conversation.members.includes(senderId)) {
+                throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
+            }
+
+            if (!content && (!attachments || attachments.length === 0)) {
+                throw new AppError(MessageError.EMPTY_MESSAGE);
+            }
+
+            const message = new Message({
+                conversationId,
+                senderId,
+                content,
+                readBy: [senderId], // ✅ người gửi auto đã đọc
+                type: type || "text",
+                attachments: attachments ? [attachments] : []
+            });
+            
+            await message.save();
+            return message;
+
+        }catch (err){
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
+
+    getConversationIDs: async(userId) =>{
+        try {
+            const conversations = await Conversation.find(
+
+                { members: userId },
+                { _id: 1 }
+            );
+            return conversations.map(c => c._id);
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
+
+    createGroup: async (name, members, userId) =>{
+        try {
+            if (!members || members.length < 2) {
+                throw new AppError(MessageError.INVALID_MEMBERS);
+            }
+
+            if (!members.includes(userId)) {
+                members.push(userId);
+            }
+
+            const group = new Conversation({
+                name,
+                members,
+                createdBy: userId,
+                isGroup: true
+            });
+
+            await group.save();
+
+            return group;
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }  
+    },
+
+    markAsRead: async (messageId, userId) =>{
+        try {
+            const message = await Message.findById(messageId);
+
+            if (!message) {
+                throw new AppError(MessageError.MESSAGE_NOT_FOUND);
+            }
+
+            const conversation = await Conversation.findById(message.conversationId);
+            if (!conversation.members.includes(userId)) {
+                throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
+            }
+            
+            // Nếu user chưa có trong danh sách đã đọc thì mới thêm
+            if (!message.readBy.includes(userId)) {
+                message.readBy.push(userId);
+                await message.save();
+            }
+
+            return message;
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }          
+    }
 }
 module.exports = messageServices;
