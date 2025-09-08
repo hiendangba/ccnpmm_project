@@ -51,64 +51,64 @@ const userServices = {
         }
     },
 
-    getAllUsers: async (page, limit, search) => {
-    try {
-        const skip = (page - 1) * limit;
-        let users = [];
-        let total = 0;
+    getAllUsers: async (page, limit, search, senderId) => {
+        try {
+            const skip = (page - 1) * limit;
+            let users = [];
+            let total = 0;
 
-        if (search) {
-        // 1️⃣ Search trong Elasticsearch
-        const esResult = await elasticClient.search({
-            index: 'users',
-            body: {
-            query: {
-                multi_match: {
-                query: search,
-                fields: ['name^3', 'mssv^2', 'email'],
-                fuzziness: 'AUTO'
+            if (search) {
+                // 1️⃣ Search trong Elasticsearch
+                const esResult = await elasticClient.search({
+                    index: 'users',
+                    body: {
+                        query: {
+                            multi_match: {
+                                query: search,
+                                fields: ['name^3', 'mssv^2', 'email'],
+                                fuzziness: 'AUTO'
+                            }
+                        },
+                        from: skip,
+                        size: limit
+                    }
+                });
+
+                total = esResult.hits.total.value;
+                const userIds = esResult.hits.hits.map(hit => hit._id).filter(id => id !== senderId);
+
+                if (userIds.length === 0) {
+                    return { users: [], total };
                 }
-            },
-            from: skip,
-            size: limit
+
+                // 2️⃣ Lấy full document từ MongoDB
+                const dbUsers = await User.find({ _id: { $in: userIds } });
+
+                // 3️⃣ Sắp xếp theo thứ tự ES
+                const userMap = dbUsers.reduce((acc, u) => {
+                    acc[u._id.toString()] = u;
+                    return acc;
+                }, {});
+                
+                users = userIds.map(id => userMap[id]);
+
+            } else {
+                // Nếu không search, lấy toàn bộ MongoDB (phân trang) nhưng loại trừ senderId
+                total = await User.countDocuments({ _id: { $ne: senderId } });
+                users = await User.find({ _id: { $ne: senderId } })
+                                    .skip(skip)
+                                    .limit(limit);
             }
-        });
 
-        total = esResult.hits.total.value;
-        const userIds = esResult.hits.hits.map(hit => hit._id);
+            if (!users || users.length === 0) {
+                throw new AppError(UserError.NOT_FOUND);
+            }
 
-        if (userIds.length === 0) {
-            return { users: [], total };
+            return { users, total };
+
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
         }
-
-        // 2️⃣ Lấy full document từ MongoDB
-        const dbUsers = await User.find({ _id: { $in: userIds } });
-
-        // 3️⃣ Sắp xếp theo thứ tự ES
-        const userMap = dbUsers.reduce((acc, u) => {
-            acc[u._id.toString()] = u;
-            return acc;
-        }, {});
-        
-        users = userIds.map(id => userMap[id]);
-
-        } else {
-        // Nếu không search, lấy toàn bộ MongoDB (phân trang)
-        total = await User.countDocuments();
-        users = await User.find()
-                            .skip(skip)
-                            .limit(limit);
-        }
-
-        if (!users || users.length === 0) {
-        throw new AppError(UserError.NOT_FOUND);
-        }
-
-        return { users, total };
-
-    } catch (err) {
-        throw err instanceof AppError ? err : AppError.fromError(err);
-    }
     },
 
     postNew: async ( postNewRequest ) => {

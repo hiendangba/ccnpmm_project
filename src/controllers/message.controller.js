@@ -13,7 +13,7 @@ const messageController = {
         let { page, limit } = req.query;
 
         page = parseInt(page) || 1;
-        limit = parseInt(limit) || 20;  
+        limit = parseInt(limit) || 99999;  
         const {messages, totalMessages, conversationId} = await messageServices.getMessageOneToOne(senderId, receiverId, page, limit);        
         return  res.status(200).json(
                     new ApiResponse({ conversationId: conversationId, 

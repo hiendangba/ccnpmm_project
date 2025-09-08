@@ -5,13 +5,23 @@ const MessageError = require("../errors/message.error");
 
 
 const messageServices = {
-    getMessageOneToOne: async (senderId, receiverId, page, limit) => {
+        getMessageOneToOne: async (senderId, receiverId, page, limit) => {
         try{
             // 1. Tìm conversation 1-1
             let conversation = await Conversation.findOne({
             isGroup: false,
             members: { $all: [senderId, receiverId], $size: 2 }
             });
+
+            // Nếu chưa có conversation thì tạo mới
+            if (!conversation) {
+                conversation = new Conversation({
+                    isGroup: false,
+                    members: [senderId, receiverId],
+                    createdBy: senderId
+                });
+                await conversation.save();
+            }
 
             // 2. Tính offset
             const skip = (page - 1) * limit;
