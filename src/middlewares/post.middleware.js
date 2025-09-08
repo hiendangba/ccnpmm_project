@@ -11,6 +11,7 @@ const validatePost = (req, res, next) => {
         next();
     }
     catch (err){
+        console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
@@ -44,6 +45,7 @@ const handleImages =  async (req, res, next) => {
         next();
 
     }catch (err){
+        console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }

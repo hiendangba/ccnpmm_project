@@ -6,6 +6,12 @@ const PostError = {
     errorCode: "USER_ID_REQUIRED"
   },
 
+  INVALID_USER_ID: {
+    message: "ID không hợp lệ.",
+    statusCode: 400,
+    errorCode: "INVALID_USER_ID"
+  },
+
   POST_EMPTY: {
     message: "Bài viết phải có nội dung hoặc hình ảnh.",
     statusCode: 400,

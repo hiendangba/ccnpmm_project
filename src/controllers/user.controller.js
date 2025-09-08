@@ -55,8 +55,17 @@ const userController = {
   postNew: async (req, res) => {
     try{
       const postNewRequest = new PostNewRequest(req.body);
-      await userService.postNew(postNewRequest);
-      const result = { message: "Đăng bài thành công." }
+      const savedPost = await userService.postNew(postNewRequest);
+      const postDTO = {
+        id: savedPost._id,          // map _id thành id
+        userId: savedPost.userId,
+        content: savedPost.content,
+        images: savedPost.images,
+        originalPostId: savedPost.originalPostId,
+        rootPostId: savedPost.rootPostId,
+        createdAt: savedPost.createdAt
+      };
+      const result = { message: "Đăng bài thành công.", post : postDTO }
       res.status(200).json(result); // trong try thi luon luon tra ve trang thai la thanh cong
     }
     catch (err) {
