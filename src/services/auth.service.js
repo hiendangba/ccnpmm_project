@@ -9,6 +9,7 @@ const { nanoid } = require('nanoid');
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {authValidation, validateFlowData} = require("../validations/auth.validation");
+const elasticClient = require('../config/elastic.client');
 
 
 
@@ -103,13 +104,22 @@ const authServices = {
             });
 
             await newUser.save();
+            await elasticClient.index({
+                index: 'users',                  // tên index
+                id: newUser._id.toString(),         // dùng _id MongoDB làm id
+                body: {
+                email: newUser.email,
+                name: newUser.name,
+                mssv: newUser.mssv,
+                createdAt: newUser.createdAt.toISOString()
+                }
+            });
             await redisClient.del(key);
 
             return newUser;
         }catch (err){
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
-        
     },
 
     resendOTPRegister : async (resendOTP) => {
