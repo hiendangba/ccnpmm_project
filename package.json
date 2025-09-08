@@ -19,6 +19,7 @@
   "homepage": "https://github.com/hiendangba/ccnpmm_project#readme",
   "description": "",
   "dependencies": {
+    "@elastic/elasticsearch": "^8.19.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",

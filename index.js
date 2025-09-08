@@ -6,6 +6,7 @@ const connectDB = require("./src/config/db");
 const route = require("./src/routes/client/index.route");
 const cookieParser = require('cookie-parser');
 const cors = require("cors");
+const errorHandler = require("./src/middlewares/error.middleware");
 const PORT = 3001;
 
 const http = require("http");
@@ -25,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 connectDB();
 route(app);
-
+app.use(errorHandler);
 const server = http.createServer(app);
 initSocket(server);
 server.listen(PORT,'0.0.0.0', () => {

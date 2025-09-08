@@ -5,6 +5,7 @@ const { nanoid } = require('nanoid');
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {updateValidation} = require("../validations/auth.validation");
+const elasticClient = require('../config/elastic.client');
 
 
 
@@ -50,24 +51,64 @@ const userServices = {
         }
     },
 
-    getAllUsers: async(page, limit) =>{
-        try{
-            const skip = (page - 1) * limit;
-            const users = await User.find()
-                                .skip(skip)
-                                .limit(limit);
-            const total = await User.countDocuments();
+    getAllUsers: async (page, limit, search) => {
+    try {
+        const skip = (page - 1) * limit;
+        let users = [];
+        let total = 0;
 
-            if(!users){
-                throw new AppError(UserError.NOT_FOUND);
+        if (search) {
+        // 1️⃣ Search trong Elasticsearch
+        const esResult = await elasticClient.search({
+            index: 'users',
+            body: {
+            query: {
+                multi_match: {
+                query: search,
+                fields: ['name^3', 'mssv^2', 'email'],
+                fuzziness: 'AUTO'
+                }
+            },
+            from: skip,
+            size: limit
             }
-            return {
-                users,
-                total
-                };
-        }catch (err){
-            throw err instanceof AppError ? err : AppError.fromError(err);
+        });
+
+        total = esResult.hits.total.value;
+        const userIds = esResult.hits.hits.map(hit => hit._id);
+
+        if (userIds.length === 0) {
+            return { users: [], total };
         }
+
+        // 2️⃣ Lấy full document từ MongoDB
+        const dbUsers = await User.find({ _id: { $in: userIds } });
+
+        // 3️⃣ Sắp xếp theo thứ tự ES
+        const userMap = dbUsers.reduce((acc, u) => {
+            acc[u._id.toString()] = u;
+            return acc;
+        }, {});
+        
+        users = userIds.map(id => userMap[id]);
+
+        } else {
+        // Nếu không search, lấy toàn bộ MongoDB (phân trang)
+        total = await User.countDocuments();
+        users = await User.find()
+                            .skip(skip)
+                            .limit(limit);
+        }
+
+        if (!users || users.length === 0) {
+        throw new AppError(UserError.NOT_FOUND);
+        }
+
+        return { users, total };
+
+    } catch (err) {
+        throw err instanceof AppError ? err : AppError.fromError(err);
+    }
     },
 
     postNew: async ( postNewRequest ) => {

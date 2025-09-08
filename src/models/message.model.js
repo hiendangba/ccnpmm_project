@@ -5,13 +5,11 @@ const messageSchema = new mongoose.Schema({
   senderId: { type: String, required: true },
   content: { type: String, trim: true },
   type: { type: String, enum: ["text", "image",], default: "text" },
-  attachments: [{ url: String, type: String, name: String }],
+  attachments: [{ url: String, name: String }],
   reactions: [{ userId: String, type: String }],
-  isRead: { type: Boolean, default: false },
+  readBy: [{ type: String }], // danh sách userId đã đọc
   deletedBy: [{ type: String }], // mảng userId đã xóa
   isDeletedForAll: { type: Boolean, default: false }, // xóa với tất cả
-  edited: { type: Boolean, default: false },
-  deliveryStatus: { type: String, enum: ["sent", "delivered", "read"], default: "sent" }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Message", messageSchema);

@@ -1,7 +1,6 @@
 class MessageResponse {
   constructor(message) {
     this.id = message._id;
-    this.conversationId = message.conversationId;
     this.senderId = message.senderId;
     this.content = message.content;
     this.type = message.type;
@@ -9,11 +8,10 @@ class MessageResponse {
     this.reactions = message.reactions || []; 
     this.isDeletedForAll = message.isDeletedForAll;
     this.deletedBy = message.deletedBy || [];
-    this.edited = message.edited;
-    this.deliveryStatus = message.deliveryStatus;
+    this.readBy = message.readBy;
     this.createdAt = message.createdAt;
     this.updatedAt = message.updatedAt;
   }
 }
 
-module.exports = { MessageResponse };
+module.exports = MessageResponse;
