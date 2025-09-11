@@ -102,8 +102,6 @@ const authServices = {
                 ...pendingUser,
                 password: hashedPassword
             });
-
-            await newUser.save();
             await elasticClient.index({
                 index: 'users',                  // tên index
                 id: newUser._id.toString(),         // dùng _id MongoDB làm id
@@ -111,9 +109,11 @@ const authServices = {
                 email: newUser.email,
                 name: newUser.name,
                 mssv: newUser.mssv,
-                createdAt: newUser.createdAt.toISOString()
                 }
             });
+
+            await newUser.save();
+            
             await redisClient.del(key);
 
             return newUser;

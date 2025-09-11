@@ -19,7 +19,12 @@ const MessageError = {
         message: "Message not found",
         statusCode: 404,
         errorCode: "MESSAGE_NOT_FOUND"
-    }
+    },
+    CONVERSATION_NOT_FOUND: {
+        massage: "Conversation not found id was incorrect",
+        statusCode: 404,
+        errorCode: "CONVERSATION_NOT_FOUND"
+    },
 };
 
 module.exports = MessageError;

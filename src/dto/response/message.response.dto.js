@@ -1,5 +1,6 @@
 class MessageResponse {
   constructor(message) {
+    this.conversationId = message.conversationId;
     this.id = message._id;
     this.senderId = message.senderId;
     this.content = message.content;
