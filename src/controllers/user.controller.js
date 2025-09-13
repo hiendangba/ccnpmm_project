@@ -44,13 +44,14 @@ const userController = {
 
   getAllUsers: async (req, res) => {
     try {
+      const senderId = req.user.id;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
       const search = req.query.search || ""; // keyword tìm kiếm
       console.log(page)
       console.log(limit)
       console.log(search)
-      const {users, total} = await userService.getAllUsers(page, limit, search);
+      const {users, total} = await userService.getAllUsers(page, limit, search, senderId);
 
       const listUserResponse = users.map(user => new UserResponse(user));
       res.status(200).json({users: listUserResponse, total});
