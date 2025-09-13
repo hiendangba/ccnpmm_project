@@ -1,9 +1,13 @@
 const userService = require("../services/user.service");
 const UserResponse = require("../dto/response/user.response.dto");
 const {UpdateUserRequest, PostNewRequest} = require("../dto/request/user.request.dto");
+const { PostResponse } = require("../dto/response/post.response.dto");
 const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
+const { getIO } = require("../config/socket");
+
+
 const userController = {
   getProfile: async (req, res) => {
     try {
@@ -60,15 +64,11 @@ const userController = {
     try{
       const postNewRequest = new PostNewRequest(req.body);
       const savedPost = await userService.postNew(postNewRequest);
-      const postDTO = {
-        id: savedPost._id,          // map _id thành id
-        userId: savedPost.userId,
-        content: savedPost.content,
-        images: savedPost.images,
-        originalPostId: savedPost.originalPostId,
-        rootPostId: savedPost.rootPostId,
-        createdAt: savedPost.createdAt
-      };
+      const postDTO = new PostResponse (savedPost);
+
+      const io = getIO();
+      io.emit("USER_UPLOAD_POST", postDTO);
+
       const result = { message: "Đăng bài thành công.", post : postDTO }
       res.status(200).json(result); // trong try thi luon luon tra ve trang thai la thanh cong
     }

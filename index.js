@@ -12,6 +12,7 @@ const PORT = 3001;
 const http = require("http");
 const { initSocket } = require("./src/config/socket");
 
+
 dotenv.config();
 
 app.use(cors({
