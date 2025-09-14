@@ -121,10 +121,12 @@ const userServices = {
                 rootPostId: postNewRequest.rootPostId || null
             });
 
-           await newPost.save();
+           const savedPost = await newPost.save();
+           return savedPost;
 
         }
         catch (err) {
+            console.error("ERROR:", err);
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },

@@ -2,7 +2,6 @@ const { validatePostNew } = require("../validations/auth.validation");
 const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
-const upload = require("./upload.middleware");
 
 const validatePost = (req, res, next) => {
     try {
@@ -11,6 +10,7 @@ const validatePost = (req, res, next) => {
         next();
     }
     catch (err){
+        console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
@@ -18,6 +18,27 @@ const validatePost = (req, res, next) => {
     }
 
 };
+
+const loadListPostMiddleware = (req, res, next) => {
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+    let userId = req.query.userId;
+
+    if (isNaN(page) || page < 1){
+        page = 1;
+    }
+    if (isNaN(limit) || limit < 1){
+        limit = 5;
+    }
+    if (!userId){
+        userId = "";
+    }
+
+    req.pagination = {page, limit, userId};
+
+    next();
+}
+
 
 
 const handleImages =  async (req, res, next) => {
@@ -44,10 +65,11 @@ const handleImages =  async (req, res, next) => {
         next();
 
     }catch (err){
+        console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
 }
-module.exports = { validatePost, handleImages };
+module.exports = { validatePost, handleImages, loadListPostMiddleware };
