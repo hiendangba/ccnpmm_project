@@ -148,13 +148,8 @@ const messageController = {
       return res.status(201).json(new ApiResponse(results));
     }
     catch (err) {
-      // res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
-        return res.status(err.statusCode || 500).json({
-            success: false,
-            message: err.message || "Internal Server Error",
-            status: err.statusCode || 500,
-            errorCode: err.errorCode || "INTERNAL_ERROR"
-        });
+        res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+
     }   
   }
 }

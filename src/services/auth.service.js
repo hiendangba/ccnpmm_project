@@ -106,9 +106,9 @@ const authServices = {
                 index: 'users',                  // tên index
                 id: newUser._id.toString(),         // dùng _id MongoDB làm id
                 body: {
-                email: newUser.email,
-                name: newUser.name,
-                mssv: newUser.mssv,
+                    email: newUser.email,
+                    name: newUser.name,
+                    mssv: newUser.mssv,
                 }
             });
 
