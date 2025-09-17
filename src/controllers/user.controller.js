@@ -65,7 +65,7 @@ const userController = {
     try{
       const postNewRequest = new PostNewRequest(req.body);
       const savedPost = await userService.postNew(postNewRequest);
-      const postDTO = new PostResponse (savedPost);
+      const postDTO = new PostResponse (savedPost, req.user.id);
 
       const io = getIO();
       io.emit("USER_UPLOAD_POST", postDTO);

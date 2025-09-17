@@ -121,7 +121,10 @@ const userServices = {
                 rootPostId: postNewRequest.rootPostId || null
             });
 
-           const savedPost = await newPost.save();
+           let savedPost = await newPost.save();
+           savedPost = await savedPost.populate("userId", "name");
+           savedPost = savedPost.toObject();
+           savedPost.user = { _id: savedPost.userId._id, name: savedPost.userId.name }
            return savedPost;
 
         }
