@@ -2,6 +2,8 @@ const { validatePostNew } = require("../validations/auth.validation");
 const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
+const PostError = require("../errors/post.error.enum");
+const AuthError = require("../errors/auth.error");
 
 const validatePost = (req, res, next) => {
     try {
@@ -24,6 +26,9 @@ const loadListPostMiddleware = (req, res, next) => {
     let limit = parseInt(req.query.limit, 10);
     let userId = req.query.userId;
 
+
+    console.log(page, limit, userId);
+
     if (isNaN(page) || page < 1){
         page = 1;
     }
@@ -37,6 +42,32 @@ const loadListPostMiddleware = (req, res, next) => {
     req.pagination = {page, limit, userId};
 
     next();
+}
+
+
+
+const likePostMiddleware = async (req, res, next) => {
+    try {
+
+        if (!req.user || !req.user.id){
+            throw new AppError (AuthError.NO_TOKEN);
+        }
+
+        req.body.userId = req.user.id;
+
+        if (!req.body.userId || !req.body.postId){
+            throw new AppError(PostError.INVALID_LIKE);
+        }
+
+        return next();
+    }
+    catch (err){
+        console.error("ERROR:", err);
+        if (!(err instanceof AppError)) { 
+            err = AppError.fromError(err);
+        }
+        res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
 }
 
 
@@ -72,4 +103,4 @@ const handleImages =  async (req, res, next) => {
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
 }
-module.exports = { validatePost, handleImages, loadListPostMiddleware };
+module.exports = { validatePost, handleImages, loadListPostMiddleware, likePostMiddleware };

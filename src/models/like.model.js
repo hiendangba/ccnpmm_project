@@ -24,6 +24,7 @@ const likeSchema = new mongoose.Schema({
     }
 }, {timestamps: true});
 
+// Một user chỉ được like 1 post duy nhất (unique)
 likeSchema.index({postId: 1, userId: 1}, {unique: true});
 
 
