@@ -28,10 +28,7 @@ const userServices = {
             if (!user) {
                 throw new AppError(UserError.NOT_FOUND);
             }
-            console.log(user)
-            console.log(updateRequest)
             updateValidation(updateRequest); 
-            console.log(updateRequest.dateOfBirth) 
             user.name = updateRequest.name ?? user.name;
             user.email = updateRequest.email ?? user.email;
             user.dateOfBirth = updateRequest.dateOfBirth 

@@ -202,6 +202,7 @@ const authServices = {
 
     refreshToken: async (refreshToken) => {
         try {
+            console.log(refreshToken)
             // 1. Xác thực refreshToken
             const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 

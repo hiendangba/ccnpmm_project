@@ -4,6 +4,8 @@ const Conversation = require("../models/conversation.model");
 const AppError = require("../errors/AppError");
 const FriendError = require("../errors/friend.error");
 const User = require("../models/user.model");
+const { getIO } = require("../config/socket");
+
 
 const friendServices = {
     sendRequest: async (senderId, sendFriendRequestDto) => {
@@ -38,6 +40,8 @@ const friendServices = {
                 ],
             });
 
+            const io = getIO();
+
             if (existing) {
                 switch (existing.status) {
                     case "pending":
@@ -49,7 +53,7 @@ const friendServices = {
                             existing.status = "accepted";
                             await existing.save();
 
-                            await Friendship.create({
+                            const result = await Friendship.create({
                                 userA: senderId,
                                 userB: receiverId,
                             });
@@ -67,6 +71,7 @@ const friendServices = {
                                 });
                             }
 
+                            io.to(receiverId.toString()).emit("friendAccept", result);
                             return existing; // accepted
                         }
                         throw new AppError(FriendError.ALREADY_REQUESTED);
@@ -81,6 +86,9 @@ const friendServices = {
                         existing.receiverId = receiverId;
                         existing.message = message;
                         await existing.save();
+
+                        io.to(receiverId.toString()).emit("friendRequest", existing);
+                        
                         return existing;
 
                     default:
@@ -95,6 +103,8 @@ const friendServices = {
                 message,
                 status: "pending",
             });
+
+            io.to(receiverId.toString()).emit("friendRequest", friendRequest);
 
             return friendRequest;
 
