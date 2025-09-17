@@ -18,4 +18,11 @@ class PostNewRequest{
     }
 }
 
-module.exports = { UpdateUserRequest, PostNewRequest } ;
+class LikePostRequest {
+    constructor(body){
+        this.userId = body.userId ?? null;
+        this.postId = body.postId ?? null;
+    }
+}
+
+module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest } ;

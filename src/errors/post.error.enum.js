@@ -46,7 +46,13 @@ const PostError = {
     message: "rootPostId không hợp lệ.",
     statusCode: 400,
     errorCode: "INVALID_ROOT_POST_ID"
-  }
+  }, 
+
+  INVALID_LIKE: {
+    message: "Thông tin like không hợp lệ",
+    statusCode: 400,
+    errorCode: "INVALID_LIKE"
+  } 
 };
 
 module.exports = PostError;

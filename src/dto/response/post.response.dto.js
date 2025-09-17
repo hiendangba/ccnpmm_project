@@ -1,12 +1,40 @@
 class PostResponse {
-    constructor(post) {
-        this.id = post._id,         
-        this.userId = post.userId,
-        this.content = post.content,
-        this.images = post.images,
-        this.originalPostId = post.originalPostId,
-        this.rootPostId = post.rootPostId,
-        this.createdAt = post.createdAt
+  constructor(post, currentUserId = null) {
+    this.id = post._id;
+    this.content = post.content;
+    this.images = post.images || [];
+    this.createdAt = post.createdAt;
+
+    // user tạo post
+    this.user = post.user
+      ? {
+          id: post.user._id,
+          name: post.user.name,
+        }
+      : null;
+
+    // like info
+    this.likeCount = post.likeCount || 0;
+    this.likeUsers = (post.likeUsers || []).map(u => ({
+      id: u._id,
+      name: u.name,
+    }));
+
+    // xác định current user có like chưa
+    this.liked = currentUserId
+      ? this.likeUsers.some(u => String(u.id) === String(currentUserId))
+      : false;
+  }
+}
+
+
+class LikePostResponse {
+    constructor(like) {
+        this.postId = like.postId;
+        this.likeUser = { id: like.userId._id, name: like.userId.name };
+        this.liked = !like.deleted;
+        this.createdAt = like.createdAt;
+        this.deletedAt = like.deletedAt;
     }
 }
-module.exports = {PostResponse};
+module.exports = { PostResponse, LikePostResponse };
