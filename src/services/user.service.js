@@ -126,7 +126,31 @@ const userServices = {
 
         }
         catch (err) {
-            console.error("ERROR:", err);
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
+
+    searchUser: async (senderId, search) => {
+        try {
+            console.log(search)
+            const esResult = await elasticClient.search({
+                    index: 'users',
+                    body: {
+                        query: {
+                            multi_match: {
+                                query: search,
+                                fields: ['name'],
+                                fuzziness: 'AUTO'
+                            }
+                        },
+                    }
+                });
+                total = esResult.hits.total.value;
+                const userIds = esResult.hits.hits.map(hit => hit._id).filter(id => id !== senderId);
+                const users = await User.find({ _id: { $in: userIds } });
+                return users;
+        }
+        catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },

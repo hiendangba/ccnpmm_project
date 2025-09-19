@@ -5,13 +5,14 @@ const AppError = require("../errors/AppError");
 const FriendError = require("../errors/friend.error");
 const User = require("../models/user.model");
 const { getIO } = require("../config/socket");
+const mongoose = require("mongoose");
+
 
 
 const friendServices = {
     sendRequest: async (senderId, sendFriendRequestDto) => {
         try {
             const { receiverId, message } = sendFriendRequestDto;
-            
             if (senderId.toString() === receiverId.toString()) {
                 throw new AppError(FriendError.CANNOT_ADD_SELF);
             }
@@ -38,10 +39,7 @@ const friendServices = {
                     { senderId, receiverId },
                     { senderId: receiverId, receiverId: senderId },
                 ],
-            });
-
-            const io = getIO();
-
+            })
             if (existing) {
                 switch (existing.status) {
                     case "pending":
@@ -50,10 +48,11 @@ const friendServices = {
                             existing.senderId.toString() === receiverId.toString() &&
                             existing.receiverId.toString() === senderId.toString()
                         ) {
+                            
                             existing.status = "accepted";
                             await existing.save();
 
-                            const result = await Friendship.create({
+                            await Friendship.create({
                                 userA: senderId,
                                 userB: receiverId,
                             });
@@ -70,9 +69,10 @@ const friendServices = {
                                     isGroup: false
                                 });
                             }
+                            await existing.populate("receiverId", "name avatar email")
+                            await existing.populate("senderId", "name avatar email"); // accepted
 
-                            io.to(receiverId.toString()).emit("friendAccept", result);
-                            return existing; // accepted
+                            return existing;
                         }
                         throw new AppError(FriendError.ALREADY_REQUESTED);
 
@@ -85,27 +85,25 @@ const friendServices = {
                         existing.senderId = senderId;
                         existing.receiverId = receiverId;
                         existing.message = message;
-                        await existing.save();
-
-                        io.to(receiverId.toString()).emit("friendRequest", existing);
-                        
+                        await existing.save();                        
+                        await existing.populate("senderId", "name avatar email");
+                        await existing.populate("receiverId", "name avatar email");;
                         return existing;
-
                     default:
                         throw new AppError(FriendError.STATUS_ERROR);
                 }
             }
 
             // 5. Tạo request mới
-            const friendRequest = await FriendRequest.create({
-                senderId,
-                receiverId,
-                message,
-                status: "pending",
+            let friendRequest = await FriendRequest.create({
+            senderId,
+            receiverId,
+            message,
+            status: "pending",
             });
-
-            io.to(receiverId.toString()).emit("friendRequest", friendRequest);
-
+            
+            await friendRequest.populate("senderId", "name avatar email")
+            await friendRequest.populate("receiverId", "name avatar email")
             return friendRequest;
 
         } catch (err) {
@@ -117,7 +115,11 @@ const friendServices = {
         try {
             const { requestId } = friendActionDto;
             // 1. Lấy request
-            const request = await FriendRequest.findOne({senderId: requestId, receiverId: senderId});
+            const request = await FriendRequest.findOne({
+                senderId: requestId,
+                receiverId: senderId
+            }).populate("receiverId", "name avatar");    
+
             if (!request) {
                 throw new AppError(FriendError.REQUEST_NOT_FOUND);
             }
@@ -126,7 +128,6 @@ const friendServices = {
                 case "pending":
                     request.status = "accepted";
                     await request.save();
-
                     // 3. Tạo Friendship
                     await Friendship.create({
                         userA: senderId,
@@ -167,7 +168,11 @@ const friendServices = {
         try {
             const { requestId } = friendActionDto;
             // 1. Lấy request
-            const request = await FriendRequest.findOne({senderId: requestId, receiverId: senderId});
+            const request = await FriendRequest.findOne({
+                senderId: requestId,
+                receiverId: senderId
+            }).populate("receiverId", "name avatar"); 
+
             if (!request) {
                 throw new AppError(FriendError.REQUEST_NOT_FOUND);
             }
@@ -197,7 +202,7 @@ const friendServices = {
         try {
             const { requestId } = friendActionDto;
             // 1. Lấy request
-            const request = await FriendRequest.findOne({senderId: senderId, receiverId: requestId});
+            const request = await FriendRequest.findOne({senderId: senderId, receiverId: requestId}).populate("senderId", "name avatar");
             if (!request) {
                 throw new AppError(FriendError.REQUEST_NOT_FOUND);
             }
@@ -246,27 +251,43 @@ const friendServices = {
                 await conversation.deleteOne();
             }
 
-            // 3. Xóa tất cả friend request liên quan
-            await FriendRequest.deleteMany({
-                $or: [
-                    { senderId: senderId, receiverId: requestId },
-                    { senderId: requestId, receiverId: senderId }
-                ]
-            });
-            return friendship;
+            const friendRequest = await FriendRequest.findOne({
+            $or: [
+                { senderId: senderId, receiverId: requestId },
+                { senderId: requestId, receiverId: senderId }
+            ]
+            }).populate("senderId", "name avatar").populate("receiverId", "name avatar");
+
+            await friendRequest.deleteOne();
+
+            return friendRequest;
 
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }      
     },
 
-    getRequest: async(senderId) => {
+    getReceivedRequest: async(senderId) => {
         try {
-            const listFriendRequest = await FriendRequest.find({
+            const listFriendRequestReceived = await FriendRequest.find({
                 receiverId: senderId,
                 status: "pending"
-            }).sort({ createdAt: -1 });
-            return listFriendRequest;
+            }).sort({ createdAt: -1 }).populate("senderId", "name avatar"); 
+            return listFriendRequestReceived
+
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }      
+    },
+
+
+    getSentRequest: async(senderId) => {
+        try {
+            const listFriendRequestSent = await FriendRequest.find({
+                senderId: senderId,
+                status: "pending"
+            }).sort({ createdAt: -1 }).populate("receiverId", "name avatar"); 
+            return listFriendRequestSent
 
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
@@ -275,18 +296,29 @@ const friendServices = {
 
     getListFriend: async(senderId) => {
         try {
-            const friendships = await Friendship.find({
+            const listFriend = await FriendRequest.find({
                 $or: [
-                    { userA: senderId },
-                    { userB: senderId }
+                    { senderId: senderId, status: "accepted" },
+                    { receiverId: senderId, status: "accepted" }
                 ]
-            }).sort({ createdAt: -1 });
+            })
+            .sort({ createdAt: -1 })
+            .populate("senderId", "name avatar")
+            .populate("receiverId", "name avatar");
 
-            const friendIds = friendships.map(f => 
-                f.userA.toString() === senderId.toString() ? f.userB : f.userA
-            );
 
-            return friendIds;
+            const friends = listFriend.map(fr => {
+                const frObj = fr.toObject();
+
+                // nếu mình là senderId thì gán lại senderId = receiverId
+                if (fr.senderId._id.toString() === senderId.toString()) {
+                    frObj.senderId = fr.receiverId;
+                }
+
+                return frObj;
+            });
+
+            return friends;
 
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);

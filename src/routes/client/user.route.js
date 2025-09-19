@@ -9,5 +9,7 @@ userRouter.get("/profile", authMiddleware,  userController.getProfile);
 userRouter.get("/all", authMiddleware, userController.getAllUsers);
 userRouter.put("/profile", authMiddleware, upload.single("avatar"),userController.updateProfile);
 userRouter.post("/postNew", authMiddleware, upload.array("images") , handleImages, validatePost, userController.postNew);
+userRouter.get("/find-user", authMiddleware, userController.searchUser);
+
 module.exports = userRouter;
 

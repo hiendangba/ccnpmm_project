@@ -1,14 +1,29 @@
 const friendServices = require("../services/friend.service");
 const ApiResponse = require("../dto/response/api.response.dto")
 const { SendFriendRequestDto, FriendActionDto } = require("../dto/request/friend.request.dto")
-const { FriendRequestResponseDto, RemoveFriendResponseDto } = require("../dto/response/friend.response.dto");
+const { FriendRequestResponseDto, RemoveFriendResponseDto, FriendResponseDto, FriendAcceptResponseDto } = require("../dto/response/friend.response.dto");
+const { getIO } = require("../config/socket");
 const friendController = {
     sendRequest: async (req, res) => {
         try {
             const senderId = req.user.id;
             const sendFriendRequestDto = new SendFriendRequestDto(req.body);
-            const friendRequestResponseDto = new FriendRequestResponseDto(await friendServices.sendRequest(senderId, sendFriendRequestDto))
-            return res.status(201).json(new ApiResponse(friendRequestResponseDto));
+            const response = await friendServices.sendRequest(senderId, sendFriendRequestDto)
+            let friendResponseDto;
+            let result
+            const io = getIO()
+            if(senderId.toString() === response.senderId._id.toString()){
+                friendResponseDto = new FriendResponseDto(response)
+                result = new FriendAcceptResponseDto(response)
+                io.to(response.receiverId._id.toString()).emit("sendRequest", friendResponseDto);
+            }else{
+                friendResponseDto = new FriendAcceptResponseDto(response)
+                result = new FriendResponseDto(response)
+
+                io.to(response.senderId._id.toString()).emit("acceptedFriend", friendResponseDto);
+            }
+            console.log(friendResponseDto)
+            return res.status(200).json(new ApiResponse(result));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
@@ -18,8 +33,12 @@ const friendController = {
         try {
             const senderId = req.user.id;
             const friendActionDto = new FriendActionDto(req.body)
-            const friendRequestResponseDto = new FriendRequestResponseDto(await friendServices.acceptRequest(senderId, friendActionDto))
-            return res.status(200).json(new ApiResponse(friendRequestResponseDto));
+            const response = await friendServices.acceptRequest(senderId, friendActionDto)
+            const friendAcceptResponseDto = new FriendAcceptResponseDto(response)
+            const io = getIO()
+            console.log(response.senderId)
+            io.to(response.senderId.toString()).emit("acceptedFriend", friendAcceptResponseDto);
+            return res.status(200).json(new ApiResponse(friendAcceptResponseDto));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
@@ -29,8 +48,11 @@ const friendController = {
         try {
             const senderId = req.user.id;
             const friendActionDto = new FriendActionDto(req.body)
-            const friendRequestResponseDto = new FriendRequestResponseDto(await friendServices.rejectRequest(senderId, friendActionDto))
-            return res.status(200).json(new ApiResponse(friendRequestResponseDto));
+            const response = await friendServices.rejectRequest(senderId, friendActionDto)
+            const friendAcceptResponseDto = new FriendAcceptResponseDto(response)
+            const io = getIO()
+            io.to(response.senderId.toString()).emit("rejectedFriend", friendAcceptResponseDto);
+            return res.status(200).json(new ApiResponse(friendAcceptResponseDto));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
@@ -39,10 +61,13 @@ const friendController = {
     cancelRequest: async (req, res) => {
         try {
             const senderId = req.user.id;
-            const friendActionDto = new FriendActionDto(req.body)
-            const friendRequestResponseDto = new FriendRequestResponseDto(await friendServices.cancelRequest(senderId, friendActionDto))
-            return res.status(200).json(new ApiResponse(friendRequestResponseDto));
-        } catch (err) {
+            const friendActionDto = new FriendActionDto(req.params)
+            const response = await friendServices.cancelRequest(senderId, friendActionDto)
+            const friendResponseDto = new FriendResponseDto(response)
+            const io = getIO()
+            io.to(response.receiverId.toString()).emit("cancelFriend", friendResponseDto);
+            return res.status(200).json(new ApiResponse(friendResponseDto));
+            } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
     },
@@ -50,20 +75,41 @@ const friendController = {
     removeFriend: async (req, res) => {
         try {
             const senderId = req.user.id;
-            const friendActionDto = new FriendActionDto(req.body)
-            const removeFriendResponseDto = new RemoveFriendResponseDto(await friendServices.removeFriend(senderId, friendActionDto))
-            return res.status(200).json(new ApiResponse(removeFriendResponseDto));
+            const friendActionDto = new FriendActionDto(req.params)
+            const response = await friendServices.removeFriend(senderId, friendActionDto)
+            let friendResponseDto;
+            const io = getIO()
+            if(senderId.toString() === response.senderId._id.toString()){
+                friendResponseDto = new FriendResponseDto(response)
+                io.to(response.receiverId._id.toString()).emit("removeFriend", friendResponseDto);
+            }else{
+                friendResponseDto = new FriendAcceptResponseDto(response)
+                io.to(response.senderId._id.toString()).emit("removeFriend", friendResponseDto);
+            }
+            return res.status(200).json(new ApiResponse(friendResponseDto));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
     },   
     
-    getRequest: async (req, res) => {
+    getReceivedRequest: async (req, res) => {
         try {
             const senderId = req.user.id;
-            const listFriendRequest = await friendServices.getRequest(senderId)
+            const listFriendRequestReceived = await friendServices.getReceivedRequest(senderId);
             return res.status(200).json(new ApiResponse({
-                listFriendRequest: listFriendRequest.map(m => new FriendRequestResponseDto(m))
+                listFriendRequestReceived: listFriendRequestReceived.map(m => new FriendResponseDto(m))
+            }));
+        } catch (err) {
+            return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+        }
+    }, 
+
+    getSentRequest: async (req, res) => {
+        try {
+            const senderId = req.user.id;
+            const listFriendRequestSent = await friendServices.getSentRequest(senderId);
+            return res.status(200).json(new ApiResponse({
+                listFriendRequestSent: listFriendRequestSent.map(m => new FriendAcceptResponseDto(m))
             }));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
@@ -73,9 +119,9 @@ const friendController = {
     getListFriend: async (req, res) => {
         try {
             const senderId = req.user.id;
-            const friendIds = await friendServices.getListFriend(senderId);
+            const listFriend = await friendServices.getListFriend(senderId);
             return res.status(200).json(new ApiResponse({
-                friendIds
+                listFriend: listFriend.map(m => new FriendResponseDto(m))
             }));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
