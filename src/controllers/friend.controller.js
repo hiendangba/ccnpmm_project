@@ -19,10 +19,8 @@ const friendController = {
             }else{
                 friendResponseDto = new FriendAcceptResponseDto(response)
                 result = new FriendResponseDto(response)
-
                 io.to(response.senderId._id.toString()).emit("acceptedFriend", friendResponseDto);
             }
-            console.log(friendResponseDto)
             return res.status(200).json(new ApiResponse(result));
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
@@ -36,7 +34,6 @@ const friendController = {
             const response = await friendServices.acceptRequest(senderId, friendActionDto)
             const friendAcceptResponseDto = new FriendAcceptResponseDto(response)
             const io = getIO()
-            console.log(response.senderId)
             io.to(response.senderId.toString()).emit("acceptedFriend", friendAcceptResponseDto);
             return res.status(200).json(new ApiResponse(friendAcceptResponseDto));
         } catch (err) {

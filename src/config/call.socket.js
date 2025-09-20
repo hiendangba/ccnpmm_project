@@ -19,7 +19,6 @@ function registerCallHandlers(io, socket) {
 
   // Khi client gửi answer
   socket.on("call-answer", (data) => {
-    console.log("call answer",data.conversationId)
     io.to(data.conversationId).emit("call-answer", data);
   });
 
@@ -29,7 +28,6 @@ function registerCallHandlers(io, socket) {
   });
 
   socket.on("call-ended", (data) => {
-    console.log(data)
     io.to(data.conversationId).emit("call-ended", data);
   });
 }
