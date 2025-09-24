@@ -18,7 +18,6 @@ function initSocket(server) {
     socket.on("join", (conversationId) => {
       socket.join(conversationId);
     });
-
     socket.on("disconnect", () => {
     });
   });

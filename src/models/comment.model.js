@@ -17,9 +17,9 @@ const commentSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    image: {
-        type: String,
-        default: ""
+    images: {
+        type: [String],
+        default: []
     },
     parentCommentId: {
         type: mongoose.Schema.Types.ObjectId,

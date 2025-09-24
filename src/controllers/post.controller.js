@@ -1,6 +1,6 @@
 const postService = require("../services/post.service");
 const { PostResponse } = require("../dto/response/post.response.dto");
-const { LikePostRequest } = require("../dto/request/user.request.dto");
+const { LikePostRequest, CommentPostRequest } = require("../dto/request/user.request.dto");
 const { getIO } = require("../config/socket");
 
 const postController = {
@@ -29,6 +29,20 @@ const postController = {
             res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
         
+    },
+    commentPost : async (req, res) => {
+        try {
+            const commentPostRequest = new CommentPostRequest(req.body);
+            const commentResponseDTO = await postService.commentPost (commentPostRequest);
+            // socket o day
+            const io = getIO ();
+            io.emit("USER_COMMENT", commentResponseDTO);
+
+            res.status(200).json({message: "Xử lý bình luận bài thành công.", commentResponseDTO});
+        }
+        catch (err) {
+            res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+        }
     }
 }
 module.exports = postController;
