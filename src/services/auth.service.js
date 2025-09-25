@@ -106,9 +106,9 @@ const authServices = {
                 index: 'users',                  // tên index
                 id: newUser._id.toString(),         // dùng _id MongoDB làm id
                 body: {
-                email: newUser.email,
-                name: newUser.name,
-                mssv: newUser.mssv,
+                    email: newUser.email,
+                    name: newUser.name,
+                    mssv: newUser.mssv,
                 }
             });
 
@@ -202,6 +202,7 @@ const authServices = {
 
     refreshToken: async (refreshToken) => {
         try {
+            console.log(refreshToken)
             // 1. Xác thực refreshToken
             const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 

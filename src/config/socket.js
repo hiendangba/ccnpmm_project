@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const SocketError = require("../errors/socket.error");
 const AppError = require("../errors/AppError");
+const registerCallHandlers = require("./call.socket");
 
 let io;
 
@@ -18,6 +19,9 @@ function initSocket(server) {
     socket.on("join", (conversationId) => {
       socket.join(conversationId);
     });
+
+    registerCallHandlers(io,socket);
+
     socket.on("disconnect", () => {
     });
   });
