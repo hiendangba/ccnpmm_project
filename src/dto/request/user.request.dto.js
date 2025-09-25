@@ -25,4 +25,15 @@ class LikePostRequest {
     }
 }
 
-module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest } ;
+class CommentPostRequest {
+    constructor(body){
+        this.userId = body.userId ?? null;
+        this.postId = body.postId ?? null;
+        this.content = body.content ?? "";
+        this.images = body.images ?? [];
+        this.parentCommentId = body.parentCommentId ?? null;
+
+    }
+}
+
+module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest, CommentPostRequest } ;
