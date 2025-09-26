@@ -3,7 +3,8 @@ const Comment = require("../models/comment.model");
 const AppError = require("../errors/AppError");
 const {
     LikePostResponse,
-    CommentPostResponse
+    CommentPostResponse,
+    PostResponse
 } = require("../dto/response/post.response.dto");
 const Like = require("../models/like.model");
 const mongoose = require("mongoose");
@@ -181,6 +182,114 @@ const postService = {
                     }
                 },
 
+                //lookup rootPost
+                {
+                    $lookup: {
+                        from: "posts",
+                        let: {
+                            rootPostId: "$rootPostId" // rootPostId của bài hiện tại
+                        },
+                        pipeline: [{
+                                $match: {
+                                    $expr: {
+                                        $and: [{
+                                            $eq: ["$_id", "$$rootPostId"]
+                                        }]
+                                    }
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "userId",
+                                    foreignField: "_id",
+                                    as: "user"
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: "$user",
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $project: {
+                                    id: "$_id",
+                                    content: 1,
+                                    images: 1,
+                                    createdAt: 1,
+                                    "user._id": 1,
+                                    "user.name": 1,
+                                }
+                            }
+                        ],
+                        as: "rootPost"
+                    }
+                },
+                // biến rootPost từ mảng thành object
+                {
+                    $unwind: {
+                        path: "$rootPost",
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                // lấy thêm số người chia sẻ
+                {
+                    $lookup: {
+                        from: "posts",
+                        let: {
+                            postId: "$_id",
+                            rootPostId: "$rootPostId"
+                        },
+                        pipeline: [{
+                                $match: {
+                                    $expr: {
+                                        $cond: [{
+                                                $eq: ["$$rootPostId", null]
+                                            }, // dk
+                                            {
+                                                $eq: ["$rootPostId", "$$postId"]
+                                            }, // neu ma khong co root
+                                            {
+                                                $eq: ["$originalPostId", "$$postId"]
+                                            } // neu ma co root thi no la cap 2 thooi
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "userId",
+                                    foreignField: "_id",
+                                    as: "user"
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: "$user",
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $project: {
+                                    id: "$_id",
+                                    "user._id": 1,
+                                    "user.name": 1,
+                                    createdAt: 1
+                                }
+                            }
+                        ],
+                        as: "shareUsers"
+
+                    }
+                },
+                // lấy số lượng share
+                {
+                    $addFields: {
+                        shareCount: { $size: "$shareUsers" }
+                    }
+                },
                 // get user 
                 {
                     $lookup: {
@@ -209,7 +318,12 @@ const postService = {
                         likeCount: 1,
                         likes: 1,
                         commentCount: 1,
-                        commentUsers: 1
+                        commentUsers: 1,
+                        shareUsers: 1,
+                        shareCount: 1,
+                        rootPost: 1,
+                        originalPostId: 1,
+                        rootPostId: 1
                     }
                 }
             ]);
@@ -285,6 +399,25 @@ const postService = {
             console.log("ERROR: ", err);
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
+    },
+    sharePost: async (sharePostRequest) => {
+        const newPost = new Post({
+            userId: sharePostRequest.userId,
+            content: sharePostRequest.content || "",
+            originalPostId: sharePostRequest.originalPostId || null,
+            rootPostId: sharePostRequest.rootPostId || null
+        });
+
+        let savedPost = await newPost.save();
+        savedPost = await savedPost.populate("userId", "name");
+        savedPost = savedPost.toObject();
+        savedPost.id = savedPost._id;
+        savedPost.user = {
+            _id: savedPost.userId._id,
+            name: savedPost.userId.name
+        };
+
+        return savedPost;
     }
 }
 

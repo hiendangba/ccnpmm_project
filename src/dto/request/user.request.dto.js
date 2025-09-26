@@ -36,4 +36,13 @@ class CommentPostRequest {
     }
 }
 
-module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest, CommentPostRequest } ;
+class SharePostRequest {
+    constructor(body) {
+        this.userId = body.userId ?? null;
+        this.content = body.content ?? "";
+        this.originalPostId = body.originalPostId ?? null;
+        this.rootPostId = body.rootPostId ?? null;
+    }
+}
+
+module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest, CommentPostRequest, SharePostRequest } ;

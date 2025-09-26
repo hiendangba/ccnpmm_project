@@ -38,7 +38,37 @@ class PostResponse {
         name: comment.user.name
       },
       createdAt: comment.createdAt
-    }))
+    }));
+
+    this.rootPostId = post.rootPostId;
+    this.originalPostId = post.originalPostId;
+
+    // rootPost
+    this.rootPost = post.rootPost ?
+      {
+        id: post.rootPost.id,
+        content: post.rootPost.content,
+        images: post.rootPost.images,
+        createdAt: post.rootPost.createdAt,
+        user: post.rootPost.user
+        ? {
+            id: post.rootPost.user._id,
+            name: post.rootPost.user.name
+          }
+        : null
+      } :
+      null;
+
+    // share info
+    this.shareCount = post.shareCount || 0;
+    this.shareUsers = (post.shareUsers || []).map(s => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      user: s.user ? {
+        id: s.user._id,
+        name: s.user.name
+      } : null
+    }));
 
     // xác định current user có like chưa
     this.liked = currentUserId ?
