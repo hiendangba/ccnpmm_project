@@ -6,7 +6,8 @@ const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
 const { getIO } = require("../config/socket");
-
+const ApiResponse = require("../dto/response/api.response.dto")
+  
 
 const userController = {
   getProfile: async (req, res) => {
@@ -48,9 +49,6 @@ const userController = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
       const search = req.query.search || ""; // keyword tìm kiếm
-      console.log(page)
-      console.log(limit)
-      console.log(search)
       const {users, total} = await userService.getAllUsers(page, limit, search, senderId);
 
       const listUserResponse = users.map(user => new UserResponse(user));
@@ -75,6 +73,23 @@ const userController = {
     }
     catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
+    }
+  },
+
+  searchUser: async (req, res) => {
+    try{
+      const senderId = req.user.id;
+      const search = req.query.search || ""; // keyword tìm kiếm
+      const users = await userService.searchUser(senderId, search)
+      res.status(200).json(new ApiResponse({users: users.map(u => new UserResponse(u))}));
+    }
+    catch (err) {
+      //res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
+      res.status(err.statusCode || 500).json({
+      message: err.message,
+      status: err.statusCode || 500,
+      errorCode: err.errorCode || 'INTERNAL_ERROR'
+    });
     }
   }
 };
