@@ -18,6 +18,40 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// Middleware kiểm tra role cụ thể
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    try {
+      const authHeader = req.headers["authorization"];
+      const token = authHeader && authHeader.split(" ")[1];
+      
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access token is required'
+        });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      if (!allowedRoles.includes(decoded.role)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. Required roles: ${allowedRoles.join(', ')}`
+        });
+      }
+
+      req.user = decoded;
+      next();
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+  };
+};
+
 const checkPassTokenMiddleware = (req, res, next) => {
   const resetToken = req.cookies.resetPass_token;
   if (!resetToken ){
@@ -34,4 +68,4 @@ const checkPassTokenMiddleware = (req, res, next) => {
   }
 }
 
-module.exports =  { authMiddleware, checkPassTokenMiddleware };
+module.exports =  { authMiddleware, requireRole, checkPassTokenMiddleware };

@@ -7,7 +7,7 @@ const elasticClient = new Client({
         password: process.env.ELASTICSEARCH_PASSWORD
     },
     tls: {
-    rejectUnauthorized: false // bỏ qua self-signed cert (chỉ dev/test)
+    rejectUnauthorized: false
     }
 });
 

@@ -5,7 +5,7 @@ const { nanoid } = require('nanoid');
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {updateValidation} = require("../validations/auth.validation");
-const elasticClient = require('../config/elastic.client');
+const elasticsearchService = require('./elasticsearch.service');
 
 
 
@@ -42,6 +42,20 @@ const userServices = {
                 user.avatar = avatarUrl;
             }
             const updatedUser = await user.save();
+            
+            // Đồng bộ với Elasticsearch
+            await elasticsearchService.indexDocument('users', updatedUser._id.toString(), {
+                name: updatedUser.name,
+                email: updatedUser.email,
+                mssv: updatedUser.mssv,
+                bio: updatedUser.bio,
+                address: updatedUser.address,
+                gender: updatedUser.gender,
+                role: updatedUser.role,
+                createdAt: updatedUser.createdAt,
+                updatedAt: updatedUser.updatedAt
+            });
+            
             return updatedUser;
         }catch (err){
             throw err instanceof AppError ? err : AppError.fromError(err);
@@ -56,19 +70,16 @@ const userServices = {
 
             if (search) {
                 // 1️⃣ Search trong Elasticsearch
-                const esResult = await elasticClient.search({
-                    index: 'users',
-                    body: {
-                        query: {
-                            multi_match: {
-                                query: search,
-                                fields: ['name^3', 'mssv^2', 'email'],
-                                fuzziness: 'AUTO'
-                            }
-                        },
-                        from: skip,
-                        size: limit
-                    }
+                const esResult = await elasticsearchService.search('users', {
+                    query: {
+                        multi_match: {
+                            query: search,
+                            fields: ['name^3', 'mssv^2', 'email'],
+                            fuzziness: 'AUTO'
+                        }
+                    },
+                    from: skip,
+                    size: limit
                 });
 
                 total = esResult.hits.total.value;
@@ -134,22 +145,19 @@ const userServices = {
     searchUser: async (senderId, search) => {
         try {
             console.log(search)
-            const esResult = await elasticClient.search({
-                    index: 'users',
-                    body: {
-                        query: {
-                            multi_match: {
-                                query: search,
-                                fields: ['name'],
-                                fuzziness: 'AUTO'
-                            }
-                        },
+            const esResult = await elasticsearchService.search('users', {
+                query: {
+                    multi_match: {
+                        query: search,
+                        fields: ['name'],
+                        fuzziness: 'AUTO'
                     }
-                });
-                total = esResult.hits.total.value;
-                const userIds = esResult.hits.hits.map(hit => hit._id).filter(id => id !== senderId);
-                const users = await User.find({ _id: { $in: userIds } });
-                return users;
+                }
+            });
+            
+            const userIds = esResult.hits.hits.map(hit => hit._id).filter(id => id !== senderId);
+            const users = await User.find({ _id: { $in: userIds } });
+            return users;
         }
         catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
