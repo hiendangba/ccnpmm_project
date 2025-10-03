@@ -4,6 +4,7 @@ const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
 const PostError = require("../errors/post.error.enum");
 const AuthError = require("../errors/auth.error");
+const mongoose = require("mongoose");
 
 const validatePost = (req, res, next) => {
     try {
@@ -44,6 +45,70 @@ const loadListPostMiddleware = (req, res, next) => {
     next();
 }
 
+const commentPostMiddleware = async (req, res, next) => {
+    try{
+
+        if (!req.user || !req.user.id){
+            throw new AppError (AuthError.NO_TOKEN);
+        }
+        req.body.userId = req.user.id;
+
+        if (!req.body.userId || !req.body.postId){
+            throw new AppError(PostError.INVALID_COMMENT);
+        }
+
+        if (!req.body.content && !req.body.images){
+            throw new AppError(PostError.INVALID_COMMENT);
+        }
+
+        if (!req.body.parentCommentId || req.body.parentCommentId === "null"){
+            req.body.parentCommentId = null;
+        }
+
+        return next();
+
+    }
+    catch(err){
+        console.error("ERROR:", err);
+        if (!(err instanceof AppError)){
+            err = AppError.fromError(err);
+        }
+        res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
+}
+
+const sharePostMiddleware = async (req, res, next ) => {
+    try{
+        if (!req.user || !req.user.id){
+            throw new AppError (AuthError.NO_TOKEN);
+        }
+        req.body.userId = req.user.id;
+
+        const { rootPostId, originalPostId } = req.body;
+
+        if ( !req.body.rootPostId || !req.body.originalPostId ){
+            throw new AppError (PostError.INVALID_SHARE);
+        }
+
+        if ( !mongoose.Types.ObjectId.isValid(rootPostId) || !mongoose.Types.ObjectId.isValid(originalPostId) )
+        {
+            throw new AppError (PostError.INVALID_SHARE);
+        }
+
+        if ( !req.body.content ){
+            req.body.content = "";
+        }
+
+        return next();
+
+    }catch (err) {
+        console.log("ERROR:", err);
+        if (!(err instanceof AppError)){
+            err = AppError.fromError(err);
+        }
+        res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    }
+}
 
 
 const likePostMiddleware = async (req, res, next) => {
@@ -103,4 +168,4 @@ const handleImages =  async (req, res, next) => {
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
 }
-module.exports = { validatePost, handleImages, loadListPostMiddleware, likePostMiddleware };
+module.exports = { validatePost, handleImages, loadListPostMiddleware, likePostMiddleware, commentPostMiddleware, sharePostMiddleware };

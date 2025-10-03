@@ -9,6 +9,7 @@ class UserResponse {
         this.gender = user.gender ?? null;
         this.address = user.address ?? null;
         this.avatarUrl = user.avatar ?? null;
+        this.role = user.role ?? 'user';
     }
 }
 module.exports = UserResponse;

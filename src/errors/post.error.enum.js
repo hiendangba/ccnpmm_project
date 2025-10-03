@@ -52,7 +52,20 @@ const PostError = {
     message: "Thông tin like không hợp lệ",
     statusCode: 400,
     errorCode: "INVALID_LIKE"
-  } 
+  },
+
+  INVALID_COMMENT: {
+    message: "Thông tin bình luận không hợp lệ",
+    statusCode: 400,
+    errorCode: "INVALID_COMMENT"
+  },
+  
+  INVALID_SHARE: {
+    message: "Thiếu thông tin id của bài viết gốc",
+    statusCode: 400,
+    errorCode: "INVALID_SHARE"
+  },
+
 };
 
 module.exports = PostError;
