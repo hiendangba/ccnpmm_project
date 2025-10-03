@@ -20,7 +20,7 @@ function initSocket(server) {
       socket.join(conversationId);
     });
 
-    registerCallHandlers(io,socket);
+    registerCallHandlers(io, socket);
 
     socket.on("disconnect", () => {
     });
