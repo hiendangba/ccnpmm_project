@@ -104,6 +104,7 @@ const postService = {
                                     id: "$_id",
                                     "user._id": 1,
                                     "user.name": 1,
+                                    "user.avatar": 1,
                                     createdAt: 1
                                 }
                             }
@@ -165,6 +166,7 @@ const postService = {
                                     postId: 1,
                                     "user._id": 1,
                                     "user.name": 1,
+                                    "user.avatar": 1,
                                     createdAt: 1,
                                 }
                             }
@@ -220,6 +222,7 @@ const postService = {
                                     createdAt: 1,
                                     "user._id": 1,
                                     "user.name": 1,
+                                    "user.avatar": 1,
                                 }
                             }
                         ],
@@ -276,6 +279,7 @@ const postService = {
                                     id: "$_id",
                                     "user._id": 1,
                                     "user.name": 1,
+                                    "user.avatar": 1,
                                     createdAt: 1
                                 }
                             }
@@ -315,6 +319,7 @@ const postService = {
                         createdAt: 1,
                         "user._id": 1,
                         "user.name": 1,
+                        "user.avatar": 1,
                         likeCount: 1,
                         likes: 1,
                         commentCount: 1,
@@ -358,7 +363,7 @@ const postService = {
             let like = await Like.findOne({
                 userId: userId,
                 postId: postId
-            }).populate("userId", "name");
+            }).populate("userId", "name avatar");
 
             if (like) {
                 like.deleted = !like.deleted;
@@ -372,7 +377,7 @@ const postService = {
                     deletedAt: null,
                 });
                 await like.save();
-                like = await like.populate("userId", "name");
+                like = await like.populate("userId", "name avatar");
             }
             return new LikePostResponse(like);
         } catch (err) {
@@ -392,7 +397,7 @@ const postService = {
 
 
             let savedComment = await newComment.save();
-            savedComment = await savedComment.populate("userId", "name");
+            savedComment = await savedComment.populate("userId", "name avatar");
             return new CommentPostResponse(savedComment);
 
         } catch (err) {
@@ -409,7 +414,7 @@ const postService = {
         });
 
         let savedPost = await newPost.save();
-        savedPost = await savedPost.populate("userId", "name");
+        savedPost = await savedPost.populate("userId", "name avatar");
         savedPost = savedPost.toObject();
         savedPost.id = savedPost._id;
         savedPost.user = {

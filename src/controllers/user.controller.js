@@ -10,6 +10,7 @@ const AppError = require("../errors/AppError");
 const { getIO } = require("../config/socket");
 const ApiResponse = require("../dto/response/api.response.dto")
 
+
 const userController = {
   getProfile: async (req, res) => {
     try {
@@ -94,6 +95,20 @@ const userController = {
     }
   },
 
+
+  getUserProfie: async (req, res) => {
+    try{
+      // auto thanh cong
+      const { userId } = req.query;
+      const userResponseDTO = await userService.getUserProfie(userId);
+      const result = { message: "Lấy user thành công!!", user:userResponseDTO};
+      res.status(200).json(result);
+    }
+    catch (err) {
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
+    }
+  },
+      
   // ========== MANAGEMENT FUNCTIONS ==========
 
   // GET /api/user/management/users - Lấy danh sách users (admin only)

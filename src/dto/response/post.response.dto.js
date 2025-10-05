@@ -10,6 +10,7 @@ class PostResponse {
       {
         id: post.user._id,
         name: post.user.name,
+        avatarUrl: post.user.avatar
       } :
       null;
 
@@ -20,7 +21,8 @@ class PostResponse {
       createdAt: like.createdAt,
       user: {
         id: like.user._id,
-        name: like.user.name
+        name: like.user.name,
+        avatarUrl: like.user.avatar
       }
     }));
 
@@ -35,7 +37,8 @@ class PostResponse {
       childs: comment.childs,
       user: {
         id: comment.user._id,
-        name: comment.user.name
+        name: comment.user.name,
+        avatarUrl: comment.user.avatar
       },
       createdAt: comment.createdAt
     }));
@@ -53,7 +56,8 @@ class PostResponse {
         user: post.rootPost.user
         ? {
             id: post.rootPost.user._id,
-            name: post.rootPost.user.name
+            name: post.rootPost.user.name,
+            avatarUrl: post.rootPost.user.avatar
           }
         : null
       } :
@@ -66,7 +70,8 @@ class PostResponse {
       createdAt: s.createdAt,
       user: s.user ? {
         id: s.user._id,
-        name: s.user.name
+        name: s.user.name,
+        avatarUrl: s.user.avatar
       } : null
     }));
 
@@ -84,7 +89,8 @@ class LikePostResponse {
     this.postId = like.postId;
     this.likeUser = {
       id: like.userId._id,
-      name: like.userId.name
+      name: like.userId.name,
+      avatarUrl: like.userId.avatar
     };
     this.liked = !like.deleted;
     this.createdAt = like.createdAt;
@@ -98,7 +104,8 @@ class CommentPostResponse {
     this.postId = comment.postId;
     this.user = {
       id: comment.userId._id,
-      name: comment.userId.name
+      name: comment.userId.name,
+      avatarUrl: comment.userId.avatar
     };
     this.content = comment.content;
     this.images = comment.images;
