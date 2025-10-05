@@ -6,7 +6,8 @@ const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
 const { getIO } = require("../config/socket");
-const ApiResponse = require("../dto/response/api.response.dto")
+const ApiResponse = require("../dto/response/api.response.dto");
+const userServices = require("../services/user.service");
   
 
 const userController = {
@@ -90,6 +91,19 @@ const userController = {
       status: err.statusCode || 500,
       errorCode: err.errorCode || 'INTERNAL_ERROR'
     });
+    }
+  },
+
+  getUserProfie: async (req, res) => {
+    try{
+      // auto thanh cong
+      const { userId } = req.query;
+      const userResponseDTO = await userServices.getUserProfie(userId);
+      const result = { message: "Lấy user thành công!!", user:userResponseDTO};
+      res.status(200).json(result);
+    }
+    catch (err) {
+      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
     }
   }
 };
