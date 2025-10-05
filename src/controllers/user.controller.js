@@ -1,4 +1,6 @@
 const userService = require("../services/user.service");
+const userManagementServices = require("../services/userManagement.service");
+const elasticsearchService = require("../services/elasticsearch.service");
 const UserResponse = require("../dto/response/user.response.dto");
 const {UpdateUserRequest, PostNewRequest} = require("../dto/request/user.request.dto");
 const { PostResponse } = require("../dto/response/post.response.dto");
@@ -6,9 +8,8 @@ const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
 const AppError = require("../errors/AppError");
 const { getIO } = require("../config/socket");
-const ApiResponse = require("../dto/response/api.response.dto");
-const userServices = require("../services/user.service");
-  
+const ApiResponse = require("../dto/response/api.response.dto")
+
 
 const userController = {
   getProfile: async (req, res) => {
@@ -94,16 +95,207 @@ const userController = {
     }
   },
 
+
   getUserProfie: async (req, res) => {
     try{
       // auto thanh cong
       const { userId } = req.query;
-      const userResponseDTO = await userServices.getUserProfie(userId);
+      const userResponseDTO = await userService.getUserProfie(userId);
       const result = { message: "Lấy user thành công!!", user:userResponseDTO};
       res.status(200).json(result);
     }
     catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode }) // tat ca cac loi quang ra day tra ve
+    }
+  },
+      
+  // ========== MANAGEMENT FUNCTIONS ==========
+
+  // GET /api/user/management/users - Lấy danh sách users (admin only)
+  managementGetAllUsers: async (req, res) => {
+    try {
+      const { page = 1, limit = 10, search = '', role = '' } = req.query;
+      const result = await userManagementServices.getAllUsersForAdmin(
+        parseInt(page),
+        parseInt(limit),
+        search,
+        role
+      );
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // GET /api/user/management/users/:id - Lấy thông tin chi tiết user (admin only)
+  managementGetUserById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await userManagementServices.getUserByIdForAdmin(id);
+      res.json({
+        success: true,
+        data: user
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // PUT /api/user/management/users/:id/role - Cập nhật role của user (admin only)
+  managementUpdateUserRole: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!role) {
+        return res.status(400).json({
+          success: false,
+          message: 'Role is required'
+        });
+      }
+
+      const user = await userManagementServices.updateUserRole(id, role);
+      res.json({
+        success: true,
+        data: user,
+        message: 'User role updated successfully'
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // DELETE /api/user/management/users/:id - Xóa user (admin only)
+  managementDeleteUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await userManagementServices.deleteUser(id);
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // POST /api/user/management/users/:id/restore - Khôi phục user đã bị xóa (admin only)
+  managementRestoreUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await userManagementServices.restoreUser(id);
+      res.json({
+        success: true,
+        data: user,
+        message: 'User restored successfully'
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // GET /api/user/management/users/stats - Lấy thống kê users theo role (admin only)
+  managementGetUserStatsByRole: async (req, res) => {
+    try {
+      const stats = await userManagementServices.getUserStatsByRole();
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // GET /api/user/management/dashboard - Lấy thống kê tổng quan (admin only)
+  managementGetDashboardStats: async (req, res) => {
+    try {
+      const stats = await userManagementServices.getDashboardStats();
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // ========== ELASTICSEARCH MANAGEMENT ==========
+
+  // GET /api/user/management/elasticsearch/status - Kiểm tra trạng thái Elasticsearch
+  managementGetElasticsearchStatus: async (req, res) => {
+    try {
+      res.json({
+        success: true,
+        data: {
+          isConnected: elasticsearchService.isConnected,
+          message: elasticsearchService.isConnected ? 'Elasticsearch is connected' : 'Elasticsearch is not available'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // POST /api/user/management/elasticsearch/sync - Đồng bộ data từ MongoDB sang Elasticsearch
+  managementSyncElasticsearch: async (req, res) => {
+    try {
+      await elasticsearchService.syncAllData();
+      res.json({
+        success: true,
+        message: 'Data synchronization completed'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  // POST /api/user/management/elasticsearch/reconnect - Thử kết nối lại Elasticsearch
+  managementReconnectElasticsearch: async (req, res) => {
+    try {
+      await elasticsearchService.reconnect();
+      res.json({
+        success: true,
+        data: {
+          isConnected: elasticsearchService.isConnected,
+          message: elasticsearchService.isConnected ? 'Reconnected successfully' : 'Reconnection failed'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 };

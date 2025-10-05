@@ -9,7 +9,7 @@ const { nanoid } = require('nanoid');
 const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {authValidation, validateFlowData} = require("../validations/auth.validation");
-const elasticClient = require('../config/elastic.client');
+const elasticsearchService = require('./elasticsearch.service');
 
 
 
@@ -102,14 +102,16 @@ const authServices = {
                 ...pendingUser,
                 password: hashedPassword
             });
-            await elasticClient.index({
-                index: 'users',                  // tên index
-                id: newUser._id.toString(),         // dùng _id MongoDB làm id
-                body: {
-                    email: newUser.email,
-                    name: newUser.name,
-                    mssv: newUser.mssv,
-                }
+            await elasticsearchService.indexDocument('users', newUser._id.toString(), {
+                name: newUser.name,
+                email: newUser.email,
+                mssv: newUser.mssv,
+                bio: newUser.bio,
+                address: newUser.address,
+                gender: newUser.gender,
+                role: newUser.role,
+                createdAt: newUser.createdAt,
+                updatedAt: newUser.updatedAt
             });
 
             await newUser.save();
@@ -177,13 +179,13 @@ const authServices = {
             if (!isMatch) throw new AppError(UserError.INVALID_PASSWORD);
 
             const token = jwt.sign(
-                { id: user._id, mssv: user.mssv },
+                { id: user._id, mssv: user.mssv, role: user.role },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES }
             );
 
             const refreshToken = jwt.sign(
-                { id: user._id, mssv: user.mssv },
+                { id: user._id, mssv: user.mssv, role: user.role },
                 process.env.JWT_REFRESH_SECRET,
                 { expiresIn: process.env.JWT_REFRESH_EXPIRES}
             );
@@ -214,7 +216,7 @@ const authServices = {
 
             // 3. Tạo access token mới
             const newAccessToken = jwt.sign(
-                { id: decoded.id, mssv: decoded.mssv },
+                { id: decoded.id, mssv: decoded.mssv, role: decoded.role },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES }
             );
