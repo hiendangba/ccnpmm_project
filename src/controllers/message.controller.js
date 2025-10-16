@@ -3,7 +3,7 @@ const MessageResponse = require("../dto/response/message.response.dto")
 const ApiResponse = require("../dto/response/api.response.dto")
 const ConversationDTO = require("../dto/response/conversation.response.dto")
 const { getIO } = require("../config/socket");
-const { SendMessageRequest } = require("../dto/request/message.request.dto")
+const { SendMessageRequest, UpdateCallRequest } = require("../dto/request/message.request.dto")
 const AppError = require("../errors/AppError");
 const CloudinaryError = require("../errors/cloudinary.error");
 const cloudinary = require("../config/cloudinary");
@@ -62,9 +62,7 @@ const messageController = {
     try {
       const senderId = req.user.id;
       const { conversationId, content, type, callStatus, startedAt, endedAt, duration } = req.body;
-
       let attachment = null;
-
       // Nếu gửi ảnh thì xử lý upload
       if (req.file && type === "image") {
         attachment = await new Promise((resolve, reject) => {
@@ -83,7 +81,6 @@ const messageController = {
           ).end(req.file.buffer);
         });
       }
-
       // Chuẩn bị request object
       const sendMessageRequest = new SendMessageRequest({
         conversationId,
@@ -101,9 +98,9 @@ const messageController = {
         sendMessageRequest,
         senderId
       );
-      
+
       const message = new MessageResponse(newMessage);
-      
+
       const io = getIO()
       // Gửi socket event
       if (message.type === "call") {
@@ -120,13 +117,30 @@ const messageController = {
         })
       );
     } catch (err) {
-      //return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
-      return res.status(err.statusCode || 500).json({
-          success: false,
-          message: err.message || "Internal Server Error",
-          status: err.statusCode || 500,
-          errorCode: err.errorCode || "INTERNAL_ERROR"
-      });
+      return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+    };
+  },
+
+
+  updateCallStatus: async (req, res) => {
+    try {
+      const senderId = req.user.id;
+      const conversationId = req.params.id;
+
+      const { callStatus, startedAt, endedAt, duration } = req.body;
+      const updateCallRequest = new UpdateCallRequest({ conversationId, callStatus, startedAt, endedAt, duration });
+      const updatedMessage = await messageServices.updateCallStatus(updateCallRequest, senderId);
+      const io = getIO();
+      io.to(conversationId.toString()).emit("updateCallStatus", updatedMessage);
+      io.to(conversationId.toString()).emit("updateCallStatusChatPage", updatedMessage);
+      return res.status(200).json(
+        new ApiResponse({
+          conversationId,
+          message: updatedMessage,
+        })
+      );
+    } catch (err) {
+      return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
   },
 
@@ -134,13 +148,31 @@ const messageController = {
   createGroup: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { name, members } = req.body;
-
-      const group = await messageServices.createGroup(name, members, userId);
-
+      let { name, members } = req.body;
+      if (typeof members === "string") {
+        members = JSON.parse(members);
+      }
+      let avatar = null;
+      if (req.file) {
+        avatar = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            { resource_type: "image" },
+            (error, result) => {
+              if (error)
+                return reject(
+                  new AppError(CloudinaryError.CLOUD_UPLOAD_ERROR)
+                );
+              resolve({
+                url: result.secure_url,
+                name: result.original_filename,
+              });
+            }
+          ).end(req.file.buffer);
+        });
+      }
+      const group = await messageServices.createGroup(name, members, avatar.url, userId);
       const result = new ConversationDTO(group);
       return res.status(201).json(new ApiResponse(result));
-
     } catch (err) {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }

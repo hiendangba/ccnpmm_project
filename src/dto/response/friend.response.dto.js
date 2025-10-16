@@ -9,16 +9,16 @@ class FriendRequestResponseDto {
   }
 }
 
-class RemoveFriendResponseDto{
-    constructor(body){
-        this.id = body._id;
-        this.userA = body.userA;
-        this.userB = body.userB;
-    }
+class RemoveFriendResponseDto {
+  constructor(body) {
+    this.id = body._id;
+    this.userA = body.userA;
+    this.userB = body.userB;
+  }
 }
 
-class FriendAcceptResponseDto{
-  constructor(body){
+class FriendAcceptResponseDto {
+  constructor(body) {
     this.id = body._id;
     this.userId = body.receiverId._id;
     this.name = body.receiverId.name;
@@ -31,8 +31,8 @@ class FriendAcceptResponseDto{
 }
 
 
-class FriendResponseDto{
-  constructor(body){
+class FriendResponseDto {
+  constructor(body) {
     this.id = body._id;
     this.userId = body.senderId._id;
     this.name = body.senderId.name;

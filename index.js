@@ -16,7 +16,7 @@ const { initSocket } = require("./src/config/socket");
 dotenv.config();
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://localhost:3002"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -30,6 +30,6 @@ route(app);
 app.use(errorHandler);
 const server = http.createServer(app);
 initSocket(server);
-server.listen(PORT,'0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

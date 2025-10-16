@@ -45,7 +45,7 @@ const UserError = {
     statusCode: 400,
     errorCode: "PASSWORD_TOO_SHORT",
   },
-  INVALID_AGE:{
+  INVALID_AGE: {
     message: "Age must be a number between 18 and 100",
     statusCode: 400,
     errorCode: "INVALID_AGE",
@@ -66,14 +66,14 @@ const UserError = {
     errorCode: "REFRESH_TOKEN_EXPIRED"
   },
   REFRESH_TOKEN_INVALID: {
-      statusCode: 401,
-      message: "Refresh token không hợp lệ",
-      errorCode: "REFRESH_TOKEN_INVALID"
+    statusCode: 401,
+    message: "Refresh token không hợp lệ",
+    errorCode: "REFRESH_TOKEN_INVALID"
   },
   REFRESH_TOKEN_ERROR: {
-      statusCode: 500,
-      message: "Có lỗi khi xử lý refresh token",
-      errorCode: "REFRESH_TOKEN_ERROR"
+    statusCode: 500,
+    message: "Có lỗi khi xử lý refresh token",
+    errorCode: "REFRESH_TOKEN_ERROR"
   },
   OTP_INVALID_OR_EXPIRED: {
     message: "OTP is invalid or has expired",
@@ -90,7 +90,7 @@ const UserError = {
     statusCode: 401,
     errorCode: "INVALID_PASSWORD",
   },
-  INTERNAL_SERVER : {
+  INTERNAL_SERVER: {
     message: "Lỗi hệ thống. Không thể thực hiện hành động.",
     statusCode: 500,
     errorCode: "INTERNAL_SERVER"

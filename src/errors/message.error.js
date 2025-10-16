@@ -25,6 +25,16 @@ const MessageError = {
         statusCode: 404,
         errorCode: "CONVERSATION_NOT_FOUND"
     },
+    CALL_NOT_FOUND: {
+        message: "Call not found or message ID invalid",
+        statusCode: 404,
+        errorCode: "CALL_NOT_FOUND"
+    },
+    NOT_CALL_MESSAGE: {
+        message: "Message type must be 'call' to update call status",
+        statusCode: 400,
+        errorCode: "NOT_CALL_MESSAGE"
+    }
 };
 
 module.exports = MessageError;

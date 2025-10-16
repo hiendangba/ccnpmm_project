@@ -1,14 +1,10 @@
-const { Client } = require('@elastic/elasticsearch');
+const { Client } = require('@opensearch-project/opensearch');
 
 const elasticClient = new Client({
-    node: process.env.ELASTICSEARCH_URL,
-    auth: {
-        username: process.env.ELASTICSEARCH_USER,
-        password: process.env.ELASTICSEARCH_PASSWORD
-    },
-    tls: {
-    rejectUnauthorized: false
-    }
+  node: process.env.ELASTICSEARCH_URL,
+  ssl: {
+    rejectUnauthorized: false // Aiven dùng self-signed cert
+  }
 });
 
 module.exports = elasticClient;

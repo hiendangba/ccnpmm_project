@@ -11,7 +11,7 @@ const userManagementServices = {
         try {
             const skip = (page - 1) * limit;
             let query = {};
-            
+
             if (search) {
                 query.$or = [
                     { name: { $regex: search, $options: 'i' } },
@@ -90,7 +90,7 @@ const userManagementServices = {
             }
 
             // Soft delete user
-            await User.findByIdAndUpdate(userId, { 
+            await User.findByIdAndUpdate(userId, {
                 deleted: true,
                 deletedAt: new Date()
             });
@@ -98,7 +98,7 @@ const userManagementServices = {
             // Xóa posts của user
             await Post.updateMany(
                 { userId },
-                { 
+                {
                     deleted: true,
                     deletedAt: new Date()
                 }
@@ -131,7 +131,7 @@ const userManagementServices = {
         try {
             const user = await User.findByIdAndUpdate(
                 userId,
-                { 
+                {
                     deleted: false,
                     deletedAt: null
                 },

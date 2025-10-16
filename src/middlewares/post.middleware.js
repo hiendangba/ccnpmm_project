@@ -9,10 +9,10 @@ const mongoose = require("mongoose");
 const validatePost = (req, res, next) => {
     try {
         req.body.userId = req.user.id;
-        validatePostNew (req.body);
+        validatePostNew(req.body);
         next();
     }
-    catch (err){
+    catch (err) {
         console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
@@ -30,80 +30,79 @@ const loadListPostMiddleware = (req, res, next) => {
 
     console.log(page, limit, userId);
 
-    if (isNaN(page) || page < 1){
+    if (isNaN(page) || page < 1) {
         page = 1;
     }
-    if (isNaN(limit) || limit < 1){
+    if (isNaN(limit) || limit < 1) {
         limit = 5;
     }
-    if (!userId){
+    if (!userId) {
         userId = "";
     }
 
-    req.pagination = {page, limit, userId};
+    req.pagination = { page, limit, userId };
 
     next();
 }
 
 const commentPostMiddleware = async (req, res, next) => {
-    try{
+    try {
 
-        if (!req.user || !req.user.id){
-            throw new AppError (AuthError.NO_TOKEN);
+        if (!req.user || !req.user.id) {
+            throw new AppError(AuthError.NO_TOKEN);
         }
         req.body.userId = req.user.id;
 
-        if (!req.body.userId || !req.body.postId){
+        if (!req.body.userId || !req.body.postId) {
             throw new AppError(PostError.INVALID_COMMENT);
         }
 
-        if (!req.body.content && !req.body.images){
+        if (!req.body.content && !req.body.images) {
             throw new AppError(PostError.INVALID_COMMENT);
         }
 
-        if (!req.body.parentCommentId || req.body.parentCommentId === "null"){
+        if (!req.body.parentCommentId || req.body.parentCommentId === "null") {
             req.body.parentCommentId = null;
         }
 
         return next();
 
     }
-    catch(err){
+    catch (err) {
         console.error("ERROR:", err);
-        if (!(err instanceof AppError)){
+        if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
 }
 
-const sharePostMiddleware = async (req, res, next ) => {
-    try{
-        if (!req.user || !req.user.id){
-            throw new AppError (AuthError.NO_TOKEN);
+const sharePostMiddleware = async (req, res, next) => {
+    try {
+        if (!req.user || !req.user.id) {
+            throw new AppError(AuthError.NO_TOKEN);
         }
         req.body.userId = req.user.id;
 
         const { rootPostId, originalPostId } = req.body;
 
-        if ( !req.body.rootPostId || !req.body.originalPostId ){
-            throw new AppError (PostError.INVALID_SHARE);
+        if (!req.body.rootPostId || !req.body.originalPostId) {
+            throw new AppError(PostError.INVALID_SHARE);
         }
 
-        if ( !mongoose.Types.ObjectId.isValid(rootPostId) || !mongoose.Types.ObjectId.isValid(originalPostId) )
-        {
-            throw new AppError (PostError.INVALID_SHARE);
+        if (!mongoose.Types.ObjectId.isValid(rootPostId) || !mongoose.Types.ObjectId.isValid(originalPostId)) {
+            throw new AppError(PostError.INVALID_SHARE);
         }
 
-        if ( !req.body.content ){
+        if (!req.body.content) {
             req.body.content = "";
         }
 
         return next();
 
-    }catch (err) {
+    } catch (err) {
         console.log("ERROR:", err);
-        if (!(err instanceof AppError)){
+        if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
@@ -114,21 +113,21 @@ const sharePostMiddleware = async (req, res, next ) => {
 const likePostMiddleware = async (req, res, next) => {
     try {
 
-        if (!req.user || !req.user.id){
-            throw new AppError (AuthError.NO_TOKEN);
+        if (!req.user || !req.user.id) {
+            throw new AppError(AuthError.NO_TOKEN);
         }
 
         req.body.userId = req.user.id;
 
-        if (!req.body.userId || !req.body.postId){
+        if (!req.body.userId || !req.body.postId) {
             throw new AppError(PostError.INVALID_LIKE);
         }
 
         return next();
     }
-    catch (err){
+    catch (err) {
         console.error("ERROR:", err);
-        if (!(err instanceof AppError)) { 
+        if (!(err instanceof AppError)) {
             err = AppError.fromError(err);
         }
         res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
@@ -137,17 +136,17 @@ const likePostMiddleware = async (req, res, next) => {
 
 
 
-const handleImages =  async (req, res, next) => {
-    try{
-        if (!req.files || req.files.length === 0){
+const handleImages = async (req, res, next) => {
+    try {
+        if (!req.files || req.files.length === 0) {
             req.body.images = [];
             return next(); // cho nó đi xuóng dưới tại vì ở dưới có check rồi
         }
 
         const uploadPromises = req.files.map(file => {
-            return new Promise ((resolve, reject) => {
+            return new Promise((resolve, reject) => {
                 cloudinary.uploader.upload_stream(
-                    { resource_type: "image"},
+                    { resource_type: "image" },
                     (error, result) => {
                         if (error) return reject(new AppError(CloudinaryError.CLOUD_UPLOAD_ERROR));
                         resolve(result.secure_url);
@@ -160,7 +159,7 @@ const handleImages =  async (req, res, next) => {
         req.body.images = urls;
         next();
 
-    }catch (err){
+    } catch (err) {
         console.error("ERROR:", err);
         if (!(err instanceof AppError)) {
             err = AppError.fromError(err);

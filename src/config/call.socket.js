@@ -8,21 +8,21 @@ function registerCallHandlers(io, socket) {
     io.to(data.conversationId).emit("cancelCall", data);
   })
 
+  socket.on("declineCall", (data) => {
+    io.to(data.conversation.conversationId).emit("declineCall", data);
+  })
   socket.on("call-accepted", (data) => {
     io.to(data.conversation.conversationId).emit("call-accepted", data);
   })
 
-  // Khi client gửi offer
   socket.on("call-offer", (data) => {
     io.to(data.conversation.conversationId).emit("call-offer", data);
   });
 
-  // Khi client gửi answer
   socket.on("call-answer", (data) => {
     io.to(data.conversationId).emit("call-answer", data);
   });
 
-  // Khi client gửi ICE candidate
   socket.on("ice-candidate", (data) => {
     io.to(data.conversationId).emit("ice-candidate", data);
   });

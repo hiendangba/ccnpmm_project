@@ -12,11 +12,13 @@ const messageSchema = new mongoose.Schema({
   isDeletedForAll: { type: Boolean, default: false }, // xóa với tất cả
 
 
-  // Dùng riêng cho call
-  callStatus: { type: String, enum: ["missed", "ended", "ongoing"], default: "ongoing" },
+  callStatus: { type: String, enum: ["ended", "ongoing", "canceled", "rejected", "ringing"] },
   startedAt: { type: Date },
   endedAt: { type: Date },
-  duration: { type: Number }, // tính bằng giây
+  duration: { type: Number },
+
+  joinedUsers: [{ type: String }],
+  rejectedUsers: [{ type: String }],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Message", messageSchema);

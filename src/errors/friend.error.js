@@ -24,18 +24,18 @@ const FriendError = {
         statusCode: 404,
         errorCode: "USER_NOT_FOUND"
     },
-    REQUEST_REJECTED:{
+    REQUEST_REJECTED: {
         message: "Yêu cầu của bạn đã bị từ chối rồi",
         statusCode: 404,
         errorCode: "REQUEST_REJECTED"
     },
-    ALREADY_NOT_FRIENDS:{
+    ALREADY_NOT_FRIENDS: {
         message: "Hai bạn chưa là bạn bè không thể thực hiện hành động",
         statusCode: 404,
         errorCode: "ALREADY_NOT_FRIENDS",
     },
 
-    STATUS_ERROR:{
+    STATUS_ERROR: {
         message: "status không hợp lệ",
         statusCode: 404,
         errorCode: "STATUS_ERROR"

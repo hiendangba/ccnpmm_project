@@ -21,7 +21,7 @@ friendshipSchema.index(
   { unique: true }
 );
 
-friendshipSchema.pre('save', function(next) {
+friendshipSchema.pre('save', function (next) {
   const ids = [this.userA.toString(), this.userB.toString()].sort();
   this.userA = ids[0];
   this.userB = ids[1];

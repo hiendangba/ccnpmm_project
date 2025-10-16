@@ -2,7 +2,7 @@ class LoginResponseDTO {
   constructor(user_id, token) {
     this.user_id = user_id;
     this.token = token
-    }
+  }
 }
 
 class RegisterResponseDTO {
@@ -15,7 +15,7 @@ class RegisterResponseDTO {
 
 class VerifyResponseDTO {
   constructor(user) {
-    this.id = user._id;   
+    this.id = user._id;
     this.name = user.name;
     this.mssv = user.mssv;
     this.email = user.email;
@@ -24,27 +24,27 @@ class VerifyResponseDTO {
 }
 
 class ForgotPasswordResponseDTO {
-  constructor(flowId, tryTime, message ){
+  constructor(flowId, tryTime, message) {
     this.flowId = flowId,
-    this.tryTime = tryTime,
-    this.message = message
+      this.tryTime = tryTime,
+      this.message = message
   }
 }
 
 class VerifyOTPFBResponseDTO {
-  constructor(message){
+  constructor(message) {
     this.message = message
   }
 }
 
 class ResetPasswordResponseDTO {
-  constructor(message){
+  constructor(message) {
     this.message = message
   }
 }
 
 class ResendOTPResponseDTO {
-  constructor(message){
+  constructor(message) {
     this.message = message
   }
 }

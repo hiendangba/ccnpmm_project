@@ -8,7 +8,7 @@ const MessageError = require("../errors/message.error");
 
 const messageServices = {
     getMessageOneToOne: async (senderId, receiverId, page, limit) => {
-        try{
+        try {
             // 1. Tìm conversation 1-1
             let conversation = await Conversation.findOne({
                 isGroup: false,
@@ -20,9 +20,9 @@ const messageServices = {
 
             // 3. Lấy messages theo page
             const messages = await Message.find({ conversationId: conversation._id })
-                                        .sort({ createdAt: -1 })
-                                        .skip(skip)
-                                        .limit(limit);
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit);
 
             // 4. Đếm tổng số message
             const totalMessages = await Message.countDocuments({ conversationId: conversation._id });
@@ -34,34 +34,34 @@ const messageServices = {
         }
     },
 
-    getMessageGroup: async(conversationId, page, limit) =>{
-        try{
+    getMessageGroup: async (conversationId, page, limit) => {
+        try {
 
             // 1. Tính offset
             const skip = (page - 1) * limit;
 
             const messages = await Message.find({ conversationId: conversationId })
-                                        .sort({ createdAt: -1 })
-                                        .skip(skip)
-                                        .limit(limit);
-            
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit);
+
             // 2. Đếm tổng số message
             const totalMessages = await Message.countDocuments({ conversationId: conversationId });
-            return { messages, totalMessages};
-            
+            return { messages, totalMessages };
+
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
 
     sendMessage: async (sendMessageRequest, senderId) => {
-        try{            
+        try {
             const conversation = await Conversation.findById(sendMessageRequest.conversationId);
             if (!conversation.members.includes(senderId)) {
                 throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
             }
 
-            if (!sendMessageRequest.content && (!sendMessageRequest.attachments || sendMessageRequest.attachments.length === 0)) {
+            if (!sendMessageRequest.content && sendMessageRequest.type != "call" && (!sendMessageRequest.attachments || sendMessageRequest.attachments.length === 0)) {
                 throw new AppError(MessageError.EMPTY_MESSAGE);
             }
 
@@ -72,17 +72,106 @@ const messageServices = {
                 content: sendMessageRequest.content,
                 readBy: [senderId], // người gửi auto đã đọc
                 type: sendMessageRequest.type || "text",
-                attachments: sendMessageRequest.attachments || []
+                startedAt: sendMessageRequest.startedAt,
+                callStatus: sendMessageRequest.callStatus,
+                endedAt: sendMessageRequest.endedAt,
+                duration: sendMessageRequest.duration,
+                attachments: sendMessageRequest.attachments || [],
             });
             await message.save();
             return message;
 
-        }catch (err){
+        } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
 
-    createGroup: async (name, members, userId) =>{
+    updateCallStatus: async (updateCallRequest, senderId) => {
+        try {
+            const { conversationId, callStatus, endedAt } = updateCallRequest;
+
+            const message = await Message.findOne({
+                conversationId,
+                type: "call",
+                callStatus: { $in: ["ringing", "ongoing"] }
+            }).sort({ createdAt: -1 });
+            if (!message) throw new AppError(MessageError.CALL_NOT_FOUND);
+
+            const conversation = await Conversation.findById(conversationId);
+            const isGroup = conversation?.isGroup;
+
+            if (isGroup) {
+                if (!message.joinedUsers) message.joinedUsers = [];
+                if (!message.rejectedUsers) message.rejectedUsers = [];
+                console.log("callStatus:", callStatus);
+                if (callStatus === "rejected") {
+                    // Người này từ chối cuộc gọi nhóm
+                    if (!message.rejectedUsers.includes(senderId)) {
+                        message.rejectedUsers.push(senderId);
+                        console.log("rejectedUsers:", message.rejectedUsers);
+                    }
+                }
+
+                if (callStatus === "canceled") {
+                    message.callStatus = "canceled";
+                    message.endedAt = new Date();
+                    message.duration = message.startedAt
+                        ? Math.floor((message.endedAt - message.startedAt) / 1000)
+                        : 0;
+                }
+
+                if (callStatus === "ongoing") {
+                    if (!message.joinedUsers.includes(senderId)) {
+                        message.joinedUsers.push(senderId);
+                    }
+                }
+
+                if (callStatus === "ended") {
+                    if (!message.endedUsers) message.endedUsers = [];
+                    if (!message.endedUsers.includes(senderId)) {
+                        message.endedUsers.push(senderId);
+                    }
+                }
+
+                // 4️⃣ Kiểm tra nếu tất cả đã từ chối → callStatus = "rejected"
+                const allRejected = conversation.members
+                    .filter((u) => u.toString() !== message.senderId.toString()) // bỏ người gọi
+                    .every((u) => message.rejectedUsers.includes(u.toString()));
+
+                console.log("allRejected", allRejected);
+                if (allRejected) {
+                    message.callStatus = "rejected";
+                    message.endedAt = new Date();
+                    message.duration = 0;
+                }
+
+                if (callStatus === "ended" && endedAt) {
+                    message.callStatus = "ended";
+                    message.endedAt = endedAt;
+                    message.duration = Math.floor(
+                        (new Date(endedAt).getTime() - new Date(message.startedAt).getTime()) / 1000
+                    );
+                }
+            } else {
+                if (callStatus) message.callStatus = callStatus;
+
+                if (endedAt) {
+                    message.endedAt = endedAt;
+                    message.duration = Math.floor(
+                        (new Date(endedAt).getTime() - new Date(message.startedAt).getTime()) / 1000
+                    );
+                }
+            }
+
+            await message.save();
+            return message;
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    },
+
+
+    createGroup: async (name, members, avatar, userId) => {
         try {
             if (!members || members.length < 2) {
                 throw new AppError(MessageError.INVALID_MEMBERS);
@@ -95,6 +184,7 @@ const messageServices = {
             const group = new Conversation({
                 name,
                 members,
+                avatar,
                 createdBy: userId,
                 isGroup: true
             });
@@ -104,10 +194,10 @@ const messageServices = {
             return group;
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
-        }  
+        }
     },
 
-    markAsRead: async (messageId, userId) =>{
+    markAsRead: async (messageId, userId) => {
         try {
             const message = await Message.findById(messageId);
 
@@ -120,7 +210,7 @@ const messageServices = {
                 throw new AppError(MessageError.USER_NOT_IN_CONVERSATION);
             }
 
-          if (!message.readBy.includes(userId)) {
+            if (!message.readBy.includes(userId)) {
                 message.readBy.push(userId);
                 await message.save();
                 return { updated: true, message };
@@ -130,7 +220,7 @@ const messageServices = {
 
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
-        }          
+        }
     },
 
     conversation: async (userId) => {

@@ -24,7 +24,7 @@ const requireRole = (allowedRoles) => {
     try {
       const authHeader = req.headers["authorization"];
       const token = authHeader && authHeader.split(" ")[1];
-      
+
       if (!token) {
         return res.status(401).json({
           success: false,
@@ -33,7 +33,7 @@ const requireRole = (allowedRoles) => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       if (!allowedRoles.includes(decoded.role)) {
         return res.status(403).json({
           success: false,
@@ -54,18 +54,18 @@ const requireRole = (allowedRoles) => {
 
 const checkPassTokenMiddleware = (req, res, next) => {
   const resetToken = req.cookies.resetPass_token;
-  if (!resetToken ){
+  if (!resetToken) {
     return res.status(401).json({ message: "Không có token, không thể thực hiện hành động." });
   }
 
-  try{
+  try {
     const payload = jwt.verify(resetToken, process.env.JWT_SECRET);
     req.resetPayload = payload;
     next();
   }
-  catch{
+  catch {
     return res.status(403).json({ message: "Token không hợp lệ" });
   }
 }
 
-module.exports =  { authMiddleware, requireRole, checkPassTokenMiddleware };
+module.exports = { authMiddleware, requireRole, checkPassTokenMiddleware };

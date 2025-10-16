@@ -5,6 +5,7 @@ const Post = require('./src/models/post.model');
 const Message = require('./src/models/message.model');
 const Conversation = require('./src/models/conversation.model');
 const Friendship = require('./src/models/friendship.model');
+const FriendRequest = require('./src/models/friendrequest.model');
 require('dotenv').config();
 
 async function seedData() {
@@ -19,6 +20,7 @@ async function seedData() {
         await Message.deleteMany({});
         await Conversation.deleteMany({});
         await Friendship.deleteMany({});
+        await FriendRequest.deleteMany({});
         console.log('Cleared existing data');
 
         // Tạo users
@@ -131,49 +133,62 @@ async function seedData() {
         const createdPosts = await Post.insertMany(posts);
         console.log(`✅ Created ${createdPosts.length} posts`);
 
-        // Tạo friendships
-        const friendships = [
+        // Tạo friend requests (accepted friendships)
+        const friendRequests = [
             {
-                userA: createdUsers[1]._id, // Hoa
-                userB: createdUsers[2]._id  // Tuấn
+                senderId: createdUsers[1]._id, // Hoa
+                receiverId: createdUsers[2]._id, // Tuấn
+                status: 'accepted',
+                message: 'Chào bạn!'
             },
             {
-                userA: createdUsers[1]._id, // Hoa
-                userB: createdUsers[3]._id  // Lan
+                senderId: createdUsers[1]._id, // Hoa
+                receiverId: createdUsers[3]._id, // Lan
+                status: 'accepted',
+                message: 'Kết bạn nhé!'
             },
             {
-                userA: createdUsers[2]._id, // Tuấn
-                userB: createdUsers[4]._id  // Đức
+                senderId: createdUsers[2]._id, // Tuấn
+                receiverId: createdUsers[4]._id, // Đức
+                status: 'accepted',
+                message: 'Chào bạn mới!'
             },
             {
-                userA: createdUsers[3]._id, // Lan
-                userB: createdUsers[5]._id  // Mai
+                senderId: createdUsers[3]._id, // Lan
+                receiverId: createdUsers[5]._id, // Mai
+                status: 'accepted',
+                message: 'Học cùng nhau nhé!'
             },
             {
-                userA: createdUsers[4]._id, // Đức
-                userB: createdUsers[5]._id  // Mai
+                senderId: createdUsers[4]._id, // Đức
+                receiverId: createdUsers[5]._id, // Mai
+                status: 'accepted',
+                message: 'Chào bạn!'
             }
         ];
 
-        const createdFriendships = await Friendship.insertMany(friendships);
-        console.log(`✅ Created ${createdFriendships.length} friendships`);
+        const createdFriendRequests = await FriendRequest.insertMany(friendRequests);
+        console.log(`✅ Created ${createdFriendRequests.length} friend requests (accepted)`);
 
-        // Tạo conversations
+        // Tạo conversations (theo đúng format của hệ thống)
         const conversations = [
             {
-                participants: [createdUsers[1]._id, createdUsers[2]._id], // Hoa - Tuấn
+                members: [createdUsers[1]._id, createdUsers[2]._id], // Hoa - Tuấn
                 createdBy: createdUsers[1]._id,
-                type: 'private'
+                isGroup: false,
+                name: null
             },
             {
-                participants: [createdUsers[1]._id, createdUsers[3]._id], // Hoa - Lan
+                members: [createdUsers[1]._id, createdUsers[3]._id], // Hoa - Lan
                 createdBy: createdUsers[1]._id,
-                type: 'private'
+                isGroup: false,
+                name: null
             },
             {
-                participants: [createdUsers[2]._id, createdUsers[4]._id], // Tuấn - Đức
+                members: [createdUsers[2]._id, createdUsers[4]._id], // Tuấn - Đức
                 createdBy: createdUsers[2]._id,
-                type: 'private'
+                isGroup: false,
+                name: null
             }
         ];
 
