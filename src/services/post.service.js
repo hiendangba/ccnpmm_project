@@ -4,10 +4,11 @@ const AppError = require("../errors/AppError");
 const {
     LikePostResponse,
     CommentPostResponse,
-    PostResponse
+    DeleteCommentResonse
 } = require("../dto/response/post.response.dto");
 const Like = require("../models/like.model");
 const mongoose = require("mongoose");
+const PostError = require("../errors/post.error.enum");
 
 // Hàm build tree từ mảng comment phẳng
 const buildCommentTree = (comments) => {
@@ -33,6 +34,31 @@ const buildCommentTree = (comments) => {
 
     return roots;
 };
+
+
+const deleteCommentAndChildren = async (commentId) => {
+    const comment = await Comment.findById(commentId);
+    if (!comment) return 0;
+
+    // Tìm các comment con
+    const children = await Comment.find({ parentCommentId: comment._id });
+
+    let deletedCount = 0;
+
+    for (const child of children) {
+        deletedCount += await deleteCommentAndChildren(child._id); // gọi đệ quy để xóa sâu
+    }
+
+    // Đánh dấu xóa chính comment này
+    if (!comment.deleted) {
+        comment.deleted = true;
+        comment.deletedAt = new Date();
+        await comment.save();
+        deletedCount += 1; // tính luôn comment hiện tại
+    }
+
+    return deletedCount;
+}
 
 const postService = {
     getAllPost: async (page, limit, userid) => {
@@ -423,6 +449,37 @@ const postService = {
         };
 
         return savedPost;
+    },
+    deleteComment : async (userId, commentId) => {
+        try{
+            if (!commentId){
+                throw new AppError(PostError.COMMENT_NOT_FOUND);
+            }
+            // lấy thông tin comment lên
+            let comment = await Comment.findById(commentId).populate("postId", "userId");
+            if (!comment){
+                throw new AppError(PostError.COMMENT_NOT_FOUND);
+            }
+            const isOwner = comment.userId.toString() === userId.toString();
+            const isPostOwner  = comment.postId.userId.toString() === userId.toString();
+
+            if (!isOwner && !isPostOwner){
+                throw new AppError(PostError.CANNOT_DELETE_COMMENT);
+            }
+
+            if (comment.deleted){
+                throw new AppError(PostError.COMMENT_ALREADY_DELETED);
+            }
+            // Gọi hàm xóa đệ quy
+            const deletedCount = await deleteCommentAndChildren(comment._id);
+
+            // Trả về DTO để frontend cập nhật lại giao diện
+            return new DeleteCommentResonse(userId, comment.postId._id, comment._id, deletedCount); // user id này là coi người bình luận là ai 
+        }
+        catch(err){
+            console.log("ERROR: ", err);
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
     }
 }
 
