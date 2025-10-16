@@ -66,6 +66,24 @@ const PostError = {
     errorCode: "INVALID_SHARE"
   },
 
+  COMMENT_NOT_FOUND: {
+    message: "Bình luận không tồn tại",
+    statusCode: 400,
+    errorCode: "COMMENT_NOT_FOUND"
+  },
+
+  CANNOT_DELETE_COMMENT: {
+    message: "Không thể xóa bình luận",
+    statusCode: 403,
+    errorCode: "CANNOT_DELETE_COMMENT"
+  },
+
+  COMMENT_ALREADY_DELETED: {
+    message: "Không thể xóa bình luận đã được xóa",
+    statusCode: 400,
+    errorCode: "COMMENT_ALREADY_DELETED"
+  },
+
 };
 
 module.exports = PostError;

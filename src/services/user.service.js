@@ -6,8 +6,7 @@ const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {updateValidation} = require("../validations/auth.validation");
 const elasticsearchService = require('./elasticsearch.service');
-
-
+const UserResponse = require("../dto/response/user.response.dto");
 
 
 const userServices = {

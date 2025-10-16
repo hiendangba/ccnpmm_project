@@ -115,8 +115,18 @@ class CommentPostResponse {
   }
 }
 
+class DeleteCommentResonse {
+  constructor (userId, postId, commentId, deletedCount) {
+    this.userId = userId,
+    this.postId = postId,
+    this.commentId = commentId,
+    this.deletedCount = deletedCount
+  }
+}
+
 module.exports = {
   PostResponse,
   LikePostResponse,
-  CommentPostResponse
+  CommentPostResponse,
+  DeleteCommentResonse
 };

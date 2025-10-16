@@ -8,6 +8,7 @@ const upload = require("../../middlewares/upload.middleware"); // multer memoryS
 route.get("/getAll", authMiddleware, loadListPostMiddleware,  postController.getAllPost);
 route.post("/likePost", authMiddleware, likePostMiddleware , postController.likePost);
 route.post("/commentPost", authMiddleware, upload.array("images") , handleImages, commentPostMiddleware, postController.commentPost );
-route.post("/sharePost", authMiddleware, sharePostMiddleware, postController.sharePost  );
+route.post("/sharePost", authMiddleware, sharePostMiddleware, postController.sharePost);
+route.delete("/deleteComment/:id", authMiddleware, postController.deleteComment);
 
 module.exports = route;
