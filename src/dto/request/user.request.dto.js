@@ -15,6 +15,7 @@ class PostNewRequest {
         this.images = body.images ?? [];
         this.originalPostId = body.originalPostId ?? null;
         this.rootPostId = body.rootPostId ?? null;
+        this.isAvatar = body.isAvatar === "true" || body.isAvatar === true;
     }
 }
 

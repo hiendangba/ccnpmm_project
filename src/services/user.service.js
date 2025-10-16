@@ -6,6 +6,7 @@ const AppError = require("../errors/AppError");
 const UserError = require("../errors/user.error.enum");
 const {updateValidation} = require("../validations/auth.validation");
 const elasticsearchService = require('./elasticsearch.service');
+const UserResponse = require("../dto/response/user.response.dto");
 
 
 
@@ -121,6 +122,20 @@ const userServices = {
 
     postNew: async ( postNewRequest ) => {
         try {
+
+            // Nếu như là avatar thì cập nhật trước 
+            if (postNewRequest.isAvatar){
+                let user = await User.findById(postNewRequest.userId);
+                if (!user) {
+                    throw new AppError(UserError.NOT_FOUND);
+                }
+                const avatar = postNewRequest.images?.[0];
+                if (avatar){
+                    user.avatar = avatar;
+                    await user.save();
+                }
+            }
+
             const newPost = new Post({
                 userId: postNewRequest.userId,
                 content: postNewRequest.content || "",
@@ -130,10 +145,11 @@ const userServices = {
             });
 
            let savedPost = await newPost.save();
-           savedPost = await savedPost.populate("userId", "name");
+           savedPost = await savedPost.populate("userId", "name avatar");
            savedPost = savedPost.toObject();
            savedPost.id = savedPost._id;
-           savedPost.user = { _id: savedPost.userId._id, name: savedPost.userId.name };
+           savedPost.user = { _id: savedPost.userId._id, name: savedPost.userId.name, avatar: savedPost.userId.avatar };
+
            return savedPost;
 
         }
@@ -163,6 +179,23 @@ const userServices = {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
+
+    getUserProfie: async (userId) => {
+        try{
+            // Thực hiện logic và quăng lỗi
+            // checkID mốt check sau
+            const user = await User.findById(userId).select("-password");
+            if (!user) {
+                throw new AppError (UserError.NOT_FOUND);
+            }
+            return new UserResponse(user);
+            
+        }
+        catch (err) {
+            // bắt lỗi, điều chỉnh và ném ra cho controller
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }
+    } 
 
 };
 module.exports = userServices;

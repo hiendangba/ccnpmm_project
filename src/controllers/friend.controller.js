@@ -115,7 +115,7 @@ const friendController = {
 
     getListFriend: async (req, res) => {
         try {
-            const senderId = req.user.id;
+            const senderId = req.query.userId;
             const listFriend = await friendServices.getListFriend(senderId);
             return res.status(200).json(new ApiResponse({
                 listFriend: listFriend.map(m => new FriendResponseDto(m))

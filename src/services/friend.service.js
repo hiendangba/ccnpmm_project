@@ -4,6 +4,10 @@ const Conversation = require("../models/conversation.model");
 const AppError = require("../errors/AppError");
 const FriendError = require("../errors/friend.error");
 const User = require("../models/user.model");
+const { getIO } = require("../config/socket");
+const mongoose = require("mongoose");
+const  UserError = require("../errors/user.error.enum");
+
 
 
 const friendServices = {
@@ -282,6 +286,9 @@ const friendServices = {
 
     getListFriend: async(senderId) => {
         try {
+            if (!senderId) {
+                throw new AppError(UserError.INVALID_USER_INFO);
+            }
             const listFriend = await FriendRequest.find({
                 $or: [
                     { senderId: senderId, status: "accepted" },
