@@ -28,21 +28,21 @@ class ForgotPassword {
 }
 
 class VerifyOTPFB {
-  constructor(body){
+  constructor(body) {
     this.flowId = body.flowId;
     this.otp = body.otp;
   }
 }
 
 class ResetPassword {
-  constructor(body, resetPayload){
+  constructor(body, resetPayload) {
     this.newPassword = body.newPassword;
     this.resetPayload = resetPayload;
   }
 }
 
 class ResendOTP {
-  constructor(body){
+  constructor(body) {
     this.flowId = body.flowId;
   }
 }

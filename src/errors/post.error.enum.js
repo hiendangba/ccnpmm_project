@@ -1,4 +1,4 @@
-const PostError = {  
+const PostError = {
 
   USER_ID_REQUIRED: {
     message: "Thiếu userId trong yêu cầu.",
@@ -46,7 +46,7 @@ const PostError = {
     message: "rootPostId không hợp lệ.",
     statusCode: 400,
     errorCode: "INVALID_ROOT_POST_ID"
-  }, 
+  },
 
   INVALID_LIKE: {
     message: "Thông tin like không hợp lệ",
@@ -59,7 +59,7 @@ const PostError = {
     statusCode: 400,
     errorCode: "INVALID_COMMENT"
   },
-  
+
   INVALID_SHARE: {
     message: "Thiếu thông tin id của bài viết gốc",
     statusCode: 400,

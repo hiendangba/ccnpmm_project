@@ -1,4 +1,4 @@
-class ConversationDTO { 
+class ConversationDTO {
   constructor(conversation) {
     this.conversationId = conversation._id;
     this.name = conversation.name;
@@ -16,9 +16,13 @@ class ConversationDTO {
         senderId: conversation.lastMessage.senderId,
         createdAt: conversation.lastMessage.createdAt,
         readBy: conversation.lastMessage.readBy,
+        type: conversation.lastMessage.type,
+        callStatus: conversation.lastMessage.callStatus,
+        startedAt: conversation.lastMessage.startedAt,
+        endedAt: conversation.lastMessage.endedAt,
+        duration: conversation.lastMessage.duration,
       };
     }
-
     // thêm nếu có members
     if (conversation.members) {
       this.members = conversation.members.map(m => ({

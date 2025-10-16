@@ -8,6 +8,9 @@ function registerCallHandlers(io, socket) {
     io.to(data.conversationId).emit("cancelCall", data);
   })
 
+  socket.on("declineCall", (data) => {
+    io.to(data.conversation.conversationId).emit("declineCall", data);
+  })
   socket.on("call-accepted", (data) => {
     io.to(data.conversation.conversationId).emit("call-accepted", data);
   })

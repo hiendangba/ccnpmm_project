@@ -36,7 +36,7 @@ const postSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
-}, {timestamps: true});
+}, { timestamps: true });
 
 // Index để lấy post của user theo thời gian
 postSchema.index({ userId: 1, createdAt: -1 });

@@ -13,7 +13,7 @@ const commentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    content:{
+    content: {
         type: String,
         default: ""
     },
@@ -35,8 +35,8 @@ const commentSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
-}, {timestamps: true});
+}, { timestamps: true });
 
-commentSchema.index({postId: 1, createdAt: -1});
+commentSchema.index({ postId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Comment", commentSchema);

@@ -1,7 +1,7 @@
 const friendServices = require("../services/friend.service");
 const ApiResponse = require("../dto/response/api.response.dto")
 const { SendFriendRequestDto, FriendActionDto } = require("../dto/request/friend.request.dto")
-const { FriendRequestResponseDto, RemoveFriendResponseDto, FriendResponseDto, FriendAcceptResponseDto } = require("../dto/response/friend.response.dto");
+const { FriendResponseDto, FriendAcceptResponseDto } = require("../dto/response/friend.response.dto");
 const { getIO } = require("../config/socket");
 const friendController = {
     sendRequest: async (req, res) => {
@@ -12,11 +12,11 @@ const friendController = {
             let friendResponseDto;
             let result
             const io = getIO()
-            if(senderId.toString() === response.senderId._id.toString()){
+            if (senderId.toString() === response.senderId._id.toString()) {
                 friendResponseDto = new FriendResponseDto(response)
                 result = new FriendAcceptResponseDto(response)
                 io.to(response.receiverId._id.toString()).emit("sendRequest", friendResponseDto);
-            }else{
+            } else {
                 friendResponseDto = new FriendAcceptResponseDto(response)
                 result = new FriendResponseDto(response)
                 io.to(response.senderId._id.toString()).emit("acceptedFriend", friendResponseDto);
@@ -64,7 +64,7 @@ const friendController = {
             const io = getIO()
             io.to(response.receiverId.toString()).emit("cancelFriend", friendResponseDto);
             return res.status(200).json(new ApiResponse(friendResponseDto));
-            } catch (err) {
+        } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
     },
@@ -76,10 +76,10 @@ const friendController = {
             const response = await friendServices.removeFriend(senderId, friendActionDto)
             let friendResponseDto;
             const io = getIO()
-            if(senderId.toString() === response.senderId._id.toString()){
+            if (senderId.toString() === response.senderId._id.toString()) {
                 friendResponseDto = new FriendResponseDto(response)
                 io.to(response.receiverId._id.toString()).emit("removeFriend", friendResponseDto);
-            }else{
+            } else {
                 friendResponseDto = new FriendAcceptResponseDto(response)
                 io.to(response.senderId._id.toString()).emit("removeFriend", friendResponseDto);
             }
@@ -87,8 +87,8 @@ const friendController = {
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
-    },   
-    
+    },
+
     getReceivedRequest: async (req, res) => {
         try {
             const senderId = req.user.id;
@@ -99,7 +99,7 @@ const friendController = {
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
-    }, 
+    },
 
     getSentRequest: async (req, res) => {
         try {
@@ -111,7 +111,7 @@ const friendController = {
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
-    }, 
+    },
 
     getListFriend: async (req, res) => {
         try {
@@ -123,8 +123,21 @@ const friendController = {
         } catch (err) {
             return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
         }
-    }, 
-    
+    },
+
+
+    searchListFriend: async (req, res) => {
+        try {
+            const senderId = req.user.id;
+            const keyword = req.query.search || ""; // Lấy từ query, default là rỗng
+            const listFriend = await friendServices.searchListFriend(senderId, keyword);
+            return res.status(200).json(new ApiResponse({
+                listFriend: listFriend.map(m => new FriendResponseDto(m))
+            }));
+        } catch (err) {
+            return res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
+        }
+    }
 }
 
 module.exports = friendController;

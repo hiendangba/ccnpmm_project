@@ -51,11 +51,11 @@ class PostResponse {
         images: post.rootPost.images,
         createdAt: post.rootPost.createdAt,
         user: post.rootPost.user
-        ? {
+          ? {
             id: post.rootPost.user._id,
             name: post.rootPost.user.name
           }
-        : null
+          : null
       } :
       null;
 

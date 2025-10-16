@@ -34,7 +34,6 @@ const userServices = {
             user.dateOfBirth = updateRequest.dateOfBirth 
             ? new Date(updateRequest.dateOfBirth) 
             : user.dateOfBirth;            
-            console.log(user.dateOfBirth)
             user.bio = updateRequest.bio ?? user.bio;
             user.address = updateRequest.address ?? user.address;
             user.gender = updateRequest.gender ?? user.gender;
@@ -67,9 +66,9 @@ const userServices = {
             const skip = (page - 1) * limit;
             let users = [];
             let total = 0;
-
+            console.log("search",search);
             if (search) {
-                // 1️⃣ Search trong Elasticsearch
+                // 1️⃣ Search trong OpenSearch
                 const esResult = await elasticsearchService.search('users', {
                     query: {
                         multi_match: {
@@ -82,12 +81,12 @@ const userServices = {
                     size: limit
                 });
 
+                // OpenSearch client trả về result.body
+                const hits = esResult.hits.hits;
                 total = esResult.hits.total.value;
-                const userIds = esResult.hits.hits.map(hit => hit._id).filter(id => id !== senderId);
-
-                if (userIds.length === 0) {
-                    return { users: [], total };
-                }
+                console.log("hits",hits);
+                const userIds = hits.map(hit => hit._id).filter(id => id !== senderId);
+                if (userIds.length === 0) return { users: [], total };
 
                 // 2️⃣ Lấy full document từ MongoDB
                 const dbUsers = await User.find({ _id: { $in: userIds } });
@@ -101,11 +100,11 @@ const userServices = {
                 users = userIds.map(id => userMap[id]);
 
             } else {
-                // Nếu không search, lấy toàn bộ MongoDB (phân trang) nhưng loại trừ senderId
+                // Không search → lấy toàn bộ MongoDB (phân trang) loại trừ senderId
                 total = await User.countDocuments({ _id: { $ne: senderId } });
                 users = await User.find({ _id: { $ne: senderId } })
-                                    .skip(skip)
-                                    .limit(limit);
+                                .skip(skip)
+                                .limit(limit);
             }
 
             if (!users || users.length === 0) {
@@ -118,6 +117,7 @@ const userServices = {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }
     },
+
 
     postNew: async ( postNewRequest ) => {
         try {

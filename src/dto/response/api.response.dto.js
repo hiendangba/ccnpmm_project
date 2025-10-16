@@ -12,6 +12,7 @@ class ApiResponse {
       this.data = data;
     }
 
+
     // Nếu có phân trang, thêm các thông tin liên quan
     if (page !== undefined && limit !== undefined && totalItems !== undefined) {
       this.page = page;

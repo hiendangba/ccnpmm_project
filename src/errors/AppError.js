@@ -7,11 +7,11 @@ class AppError extends Error {
   }
   static fromError(err) {
     return new AppError({
-          message: err.message || "Có lỗi xảy ra, vui lòng thử lại sau.",
-          statusCode: err.statusCode || 500,
-          errorCode: err.errorCode || "INTERNAL_ERROR"
-      });
-    }  
+      message: err.message || "Có lỗi xảy ra, vui lòng thử lại sau.",
+      statusCode: err.statusCode || 500,
+      errorCode: err.errorCode || "INTERNAL_ERROR"
+    });
+  }
 }
 
 module.exports = AppError;

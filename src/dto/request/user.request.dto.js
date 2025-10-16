@@ -8,8 +8,8 @@ class UpdateUserRequest {
     }
 }
 
-class PostNewRequest{
-    constructor(body){
+class PostNewRequest {
+    constructor(body) {
         this.userId = body.userId ?? null;
         this.content = body.content ?? "";
         this.images = body.images ?? [];
@@ -19,14 +19,14 @@ class PostNewRequest{
 }
 
 class LikePostRequest {
-    constructor(body){
+    constructor(body) {
         this.userId = body.userId ?? null;
         this.postId = body.postId ?? null;
     }
 }
 
 class CommentPostRequest {
-    constructor(body){
+    constructor(body) {
         this.userId = body.userId ?? null;
         this.postId = body.postId ?? null;
         this.content = body.content ?? "";
@@ -45,4 +45,4 @@ class SharePostRequest {
     }
 }
 
-module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest, CommentPostRequest, SharePostRequest } ;
+module.exports = { UpdateUserRequest, PostNewRequest, LikePostRequest, CommentPostRequest, SharePostRequest };

@@ -22,10 +22,10 @@ const likeSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
-}, {timestamps: true});
+}, { timestamps: true });
 
 // Một user chỉ được like 1 post duy nhất (unique)
-likeSchema.index({postId: 1, userId: 1}, {unique: true});
+likeSchema.index({ postId: 1, userId: 1 }, { unique: true });
 
 
 module.exports = mongoose.model("Like", likeSchema);

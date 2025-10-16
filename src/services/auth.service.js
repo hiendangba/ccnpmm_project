@@ -102,6 +102,23 @@ const authServices = {
                 ...pendingUser,
                 password: hashedPassword
             });
+
+           await elasticsearchService.createIndexIfNotExists('users', {
+            mappings: {
+                properties: {
+                name:    { type: 'text' },
+                email:   { type: 'keyword' },
+                mssv:    { type: 'keyword' },
+                bio:     { type: 'text' },
+                address: { type: 'text' },
+                gender:  { type: 'keyword' },
+                role:    { type: 'keyword' },
+                createdAt: { type: 'date' },
+                updatedAt: { type: 'date' }
+                }
+            }
+            });
+
             await elasticsearchService.indexDocument('users', newUser._id.toString(), {
                 name: newUser.name,
                 email: newUser.email,

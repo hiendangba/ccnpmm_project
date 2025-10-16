@@ -51,281 +51,281 @@ const postService = {
             // const listResult= await Post.find(query).skip(skip).limit(limit).sort({ createdAt: -1});
 
             const listResult = await Post.aggregate([{
-                    $match: query
-                },
-                {
-                    $sort: {
-                        createdAt: -1
-                    }
-                },
-                {
-                    $skip: skip
-                },
-                {
-                    $limit: limit
-                },
+                $match: query
+            },
+            {
+                $sort: {
+                    createdAt: -1
+                }
+            },
+            {
+                $skip: skip
+            },
+            {
+                $limit: limit
+            },
 
-                // lookup like 
-                {
-                    $lookup: {
-                        from: "likes",
-                        let: {
-                            postId: "$_id"
-                        },
-                        pipeline: [{
-                                $match: {
-                                    $expr: {
-                                        $and: [{
-                                                $eq: ["$postId", "$$postId"]
-                                            },
-                                            {
-                                                $eq: ["$deleted", false]
-                                            }
-                                        ]
-                                    }
+            // lookup like 
+            {
+                $lookup: {
+                    from: "likes",
+                    let: {
+                        postId: "$_id"
+                    },
+                    pipeline: [{
+                        $match: {
+                            $expr: {
+                                $and: [{
+                                    $eq: ["$postId", "$$postId"]
+                                },
+                                {
+                                    $eq: ["$deleted", false]
                                 }
-                            },
-                            {
-                                $lookup: {
-                                    from: "users",
-                                    localField: "userId",
-                                    foreignField: "_id",
-                                    as: "user"
-                                }
-                            },
-                            {
-                                $unwind: {
-                                    path: "$user",
-                                    preserveNullAndEmptyArrays: true
-                                }
-                            },
-                            {
-                                $project: {
-                                    id: "$_id",
-                                    "user._id": 1,
-                                    "user.name": 1,
-                                    createdAt: 1
-                                }
+                                ]
                             }
-                        ],
-                        as: "likes"
-                    }
-                },
-
-                // count likes 
-                {
-                    $addFields: {
-                        likeCount: {
-                            $size: "$likes"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "userId",
+                            foreignField: "_id",
+                            as: "user"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$user",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            id: "$_id",
+                            "user._id": 1,
+                            "user.name": 1,
+                            createdAt: 1
                         }
                     }
-                },
+                    ],
+                    as: "likes"
+                }
+            },
 
-
-                // lookup comment
-                {
-                    $lookup: {
-                        from: "comments",
-                        let: {
-                            postId: "$_id"
-                        },
-                        pipeline: [{
-                                $match: {
-                                    $expr: {
-                                        $and: [{
-                                                $eq: ["$postId", "$$postId"]
-                                            },
-                                            {
-                                                $eq: ["$deleted", false]
-                                            }
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                $lookup: {
-                                    from: "users",
-                                    localField: "userId",
-                                    foreignField: "_id",
-                                    as: "user"
-                                }
-                            },
-                            {
-                                $unwind: {
-                                    path: "$user",
-                                    preserveNullAndEmptyArrays: true
-                                }
-                            },
-                            {
-                                $project: {
-                                    id: "$_id",
-                                    content: 1,
-                                    images: 1,
-                                    parentCommentId: 1,
-                                    postId: 1,
-                                    "user._id": 1,
-                                    "user.name": 1,
-                                    createdAt: 1,
-                                }
-                            }
-                        ],
-                        as: "commentUsers"
-                    }
-                },
-
-                // count likes 
-                {
-                    $addFields: {
-                        commentCount: {
-                            $size: "$commentUsers"
-                        }
-                    }
-                },
-
-                //lookup rootPost
-                {
-                    $lookup: {
-                        from: "posts",
-                        let: {
-                            rootPostId: "$rootPostId" // rootPostId của bài hiện tại
-                        },
-                        pipeline: [{
-                                $match: {
-                                    $expr: {
-                                        $and: [{
-                                            $eq: ["$_id", "$$rootPostId"]
-                                        }]
-                                    }
-                                }
-                            },
-                            {
-                                $lookup: {
-                                    from: "users",
-                                    localField: "userId",
-                                    foreignField: "_id",
-                                    as: "user"
-                                }
-                            },
-                            {
-                                $unwind: {
-                                    path: "$user",
-                                    preserveNullAndEmptyArrays: true
-                                }
-                            },
-                            {
-                                $project: {
-                                    id: "$_id",
-                                    content: 1,
-                                    images: 1,
-                                    createdAt: 1,
-                                    "user._id": 1,
-                                    "user.name": 1,
-                                }
-                            }
-                        ],
-                        as: "rootPost"
-                    }
-                },
-                // biến rootPost từ mảng thành object
-                {
-                    $unwind: {
-                        path: "$rootPost",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                // lấy thêm số người chia sẻ
-                {
-                    $lookup: {
-                        from: "posts",
-                        let: {
-                            postId: "$_id",
-                            rootPostId: "$rootPostId"
-                        },
-                        pipeline: [{
-                                $match: {
-                                    $expr: {
-                                        $cond: [{
-                                                $eq: ["$$rootPostId", null]
-                                            }, // dk
-                                            {
-                                                $eq: ["$rootPostId", "$$postId"]
-                                            }, // neu ma khong co root
-                                            {
-                                                $eq: ["$originalPostId", "$$postId"]
-                                            } // neu ma co root thi no la cap 2 thooi
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                $lookup: {
-                                    from: "users",
-                                    localField: "userId",
-                                    foreignField: "_id",
-                                    as: "user"
-                                }
-                            },
-                            {
-                                $unwind: {
-                                    path: "$user",
-                                    preserveNullAndEmptyArrays: true
-                                }
-                            },
-                            {
-                                $project: {
-                                    id: "$_id",
-                                    "user._id": 1,
-                                    "user.name": 1,
-                                    createdAt: 1
-                                }
-                            }
-                        ],
-                        as: "shareUsers"
-
-                    }
-                },
-                // lấy số lượng share
-                {
-                    $addFields: {
-                        shareCount: { $size: "$shareUsers" }
-                    }
-                },
-                // get user 
-                {
-                    $lookup: {
-                        from: "users",
-                        localField: "userId",
-                        foreignField: "_id",
-                        as: "user"
-                    }
-                },
-
-                {
-                    $unwind: {
-                        path: "$user",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-
-                {
-                    $project: {
-                        id: "$_id",
-                        content: 1,
-                        images: 1,
-                        createdAt: 1,
-                        "user._id": 1,
-                        "user.name": 1,
-                        likeCount: 1,
-                        likes: 1,
-                        commentCount: 1,
-                        commentUsers: 1,
-                        shareUsers: 1,
-                        shareCount: 1,
-                        rootPost: 1,
-                        originalPostId: 1,
-                        rootPostId: 1
+            // count likes 
+            {
+                $addFields: {
+                    likeCount: {
+                        $size: "$likes"
                     }
                 }
+            },
+
+
+            // lookup comment
+            {
+                $lookup: {
+                    from: "comments",
+                    let: {
+                        postId: "$_id"
+                    },
+                    pipeline: [{
+                        $match: {
+                            $expr: {
+                                $and: [{
+                                    $eq: ["$postId", "$$postId"]
+                                },
+                                {
+                                    $eq: ["$deleted", false]
+                                }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "userId",
+                            foreignField: "_id",
+                            as: "user"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$user",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            id: "$_id",
+                            content: 1,
+                            images: 1,
+                            parentCommentId: 1,
+                            postId: 1,
+                            "user._id": 1,
+                            "user.name": 1,
+                            createdAt: 1,
+                        }
+                    }
+                    ],
+                    as: "commentUsers"
+                }
+            },
+
+            // count likes 
+            {
+                $addFields: {
+                    commentCount: {
+                        $size: "$commentUsers"
+                    }
+                }
+            },
+
+            //lookup rootPost
+            {
+                $lookup: {
+                    from: "posts",
+                    let: {
+                        rootPostId: "$rootPostId" // rootPostId của bài hiện tại
+                    },
+                    pipeline: [{
+                        $match: {
+                            $expr: {
+                                $and: [{
+                                    $eq: ["$_id", "$$rootPostId"]
+                                }]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "userId",
+                            foreignField: "_id",
+                            as: "user"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$user",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            id: "$_id",
+                            content: 1,
+                            images: 1,
+                            createdAt: 1,
+                            "user._id": 1,
+                            "user.name": 1,
+                        }
+                    }
+                    ],
+                    as: "rootPost"
+                }
+            },
+            // biến rootPost từ mảng thành object
+            {
+                $unwind: {
+                    path: "$rootPost",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            // lấy thêm số người chia sẻ
+            {
+                $lookup: {
+                    from: "posts",
+                    let: {
+                        postId: "$_id",
+                        rootPostId: "$rootPostId"
+                    },
+                    pipeline: [{
+                        $match: {
+                            $expr: {
+                                $cond: [{
+                                    $eq: ["$$rootPostId", null]
+                                }, // dk
+                                {
+                                    $eq: ["$rootPostId", "$$postId"]
+                                }, // neu ma khong co root
+                                {
+                                    $eq: ["$originalPostId", "$$postId"]
+                                } // neu ma co root thi no la cap 2 thooi
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "userId",
+                            foreignField: "_id",
+                            as: "user"
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$user",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            id: "$_id",
+                            "user._id": 1,
+                            "user.name": 1,
+                            createdAt: 1
+                        }
+                    }
+                    ],
+                    as: "shareUsers"
+
+                }
+            },
+            // lấy số lượng share
+            {
+                $addFields: {
+                    shareCount: { $size: "$shareUsers" }
+                }
+            },
+            // get user 
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+
+            {
+                $unwind: {
+                    path: "$user",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+
+            {
+                $project: {
+                    id: "$_id",
+                    content: 1,
+                    images: 1,
+                    createdAt: 1,
+                    "user._id": 1,
+                    "user.name": 1,
+                    likeCount: 1,
+                    likes: 1,
+                    commentCount: 1,
+                    commentUsers: 1,
+                    shareUsers: 1,
+                    shareCount: 1,
+                    rootPost: 1,
+                    originalPostId: 1,
+                    rootPostId: 1
+                }
+            }
             ]);
 
             // xử lý comment thành cây trước khi return

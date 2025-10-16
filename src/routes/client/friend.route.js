@@ -11,5 +11,5 @@ friendRouter.delete("/remove/:requestId", authMiddleware, friendController.remov
 friendRouter.get("/requests/sent", authMiddleware, friendController.getSentRequest)
 friendRouter.get("/requests/received", authMiddleware, friendController.getReceivedRequest)
 friendRouter.get("/list", authMiddleware, friendController.getListFriend)
-
+friendRouter.get("/search", authMiddleware, friendController.searchListFriend)
 module.exports = friendRouter;

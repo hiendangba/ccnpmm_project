@@ -4,9 +4,6 @@ const Conversation = require("../models/conversation.model");
 const AppError = require("../errors/AppError");
 const FriendError = require("../errors/friend.error");
 const User = require("../models/user.model");
-const { getIO } = require("../config/socket");
-const mongoose = require("mongoose");
-
 
 
 const friendServices = {
@@ -43,7 +40,6 @@ const friendServices = {
             if (existing) {
                 switch (existing.status) {
                     case "pending":
-                        // Nếu request cũ là do receiver gửi => coi như đồng ý
                         if (
                             existing.senderId.toString() === receiverId.toString() &&
                             existing.receiverId.toString() === senderId.toString()
@@ -80,7 +76,6 @@ const friendServices = {
                         throw new AppError(FriendError.ALREADY_FRIENDS);
 
                     case "rejected":
-                        // Cho phép gửi lại: reset lại request
                         existing.status = "pending";
                         existing.senderId = senderId;
                         existing.receiverId = receiverId;
@@ -242,15 +237,6 @@ const friendServices = {
 
             await friendship.deleteOne();
 
-            // 2. Xóa conversation 1-1 nếu có
-            const conversation = await Conversation.findOne({
-                isGroup: false,
-                members: { $all: [senderId, requestId], $size: 2 }
-            });
-            if (conversation) {
-                await conversation.deleteOne();
-            }
-
             const friendRequest = await FriendRequest.findOne({
             $or: [
                 { senderId: senderId, receiverId: requestId },
@@ -309,17 +295,29 @@ const friendServices = {
 
             const friends = listFriend.map(fr => {
                 const frObj = fr.toObject();
-
                 // nếu mình là senderId thì gán lại senderId = receiverId
                 if (fr.senderId._id.toString() === senderId.toString()) {
                     frObj.senderId = fr.receiverId;
                 }
-
                 return frObj;
             });
 
             return friends;
 
+        } catch (err) {
+            throw err instanceof AppError ? err : AppError.fromError(err);
+        }      
+    },
+
+
+    searchListFriend: async function(senderId, keyword) {
+        try {
+            const friends = await this.getListFriend(senderId);
+            const lowerKeyword = keyword.toLowerCase();
+            const filteredFriends = friends.filter(fr => 
+                fr.senderId.name.toLowerCase().includes(lowerKeyword)
+            );
+            return filteredFriends;
         } catch (err) {
             throw err instanceof AppError ? err : AppError.fromError(err);
         }      

@@ -6,7 +6,7 @@ class ElasticsearchService {
         this.checkConnection();
     }
 
-    // Kiểm tra kết nối Elasticsearch
+    // Kiểm tra kết nối Elasticsearch/OpenSearch
     async checkConnection() {
         try {
             await elasticClient.ping();
@@ -14,22 +14,19 @@ class ElasticsearchService {
             console.log('✅ Elasticsearch connected successfully');
         } catch (error) {
             this.isConnected = false;
-            console.log('⚠️ Elasticsearch connection failed, continuing without Elasticsearch');
+            console.log('⚠️ Elasticsearch connection failed, continuing without Elasticsearch', error.message);
         }
     }
 
     // Tạo index nếu chưa tồn tại
     async createIndexIfNotExists(indexName, mapping = {}) {
         if (!this.isConnected) return;
-
         try {
             const exists = await elasticClient.indices.exists({ index: indexName });
-            if (!exists) {
+            if (!exists.body) {
                 await elasticClient.indices.create({
                     index: indexName,
-                    body: {
-                        mappings: mapping
-                    }
+                    body: mapping // OpenSearch client dùng "body"
                 });
                 console.log(`✅ Created index: ${indexName}`);
             }
@@ -47,12 +44,11 @@ class ElasticsearchService {
             await elasticClient.index({
                 index: indexName,
                 id: id,
-                body: document
+                body: document // OpenSearch client vẫn dùng "body"
             });
             console.log(`✅ Indexed document ${id} to ${indexName}`);
         } catch (error) {
             console.log(`⚠️ Failed to index document ${id}:`, error.message);
-            // Không throw error, chỉ log và tiếp tục
         }
     }
 
@@ -72,16 +68,15 @@ class ElasticsearchService {
     }
 
     // Tìm kiếm
-    async search(indexName, query) {
+    async search(indexName, body) {
         if (!this.isConnected) {
-            console.log('⚠️ Elasticsearch not available, returning empty results');
             return { hits: { hits: [], total: { value: 0 } } };
         }
 
         try {
             const result = await elasticClient.search({
                 index: indexName,
-                body: query
+                body // body chứa { query, from, size } đầy đủ
             });
             return result.body;
         } catch (error) {
@@ -90,6 +85,7 @@ class ElasticsearchService {
         }
     }
 
+
     // Bulk operations
     async bulkIndex(indexName, documents) {
         if (!this.isConnected) return;
@@ -97,16 +93,11 @@ class ElasticsearchService {
         try {
             const body = [];
             documents.forEach(doc => {
-                body.push({
-                    index: {
-                        _index: indexName,
-                        _id: doc.id
-                    }
-                });
+                body.push({ index: { _index: indexName, _id: doc.id } });
                 body.push(doc.data);
             });
 
-            await elasticClient.bulk({ body });
+            await elasticClient.bulk({ refresh: true, body });
             console.log(`✅ Bulk indexed ${documents.length} documents to ${indexName}`);
         } catch (error) {
             console.log(`⚠️ Bulk index failed:`, error.message);
@@ -120,18 +111,20 @@ class ElasticsearchService {
         try {
             const User = require('../models/user.model');
             const users = await User.find({}).select('-password');
-            
+
             await this.createIndexIfNotExists('users', {
-                properties: {
-                    name: { type: 'text' },
-                    email: { type: 'keyword' },
-                    mssv: { type: 'keyword' },
-                    bio: { type: 'text' },
-                    address: { type: 'text' },
-                    gender: { type: 'keyword' },
-                    role: { type: 'keyword' },
-                    createdAt: { type: 'date' },
-                    updatedAt: { type: 'date' }
+                mappings: {
+                    properties: {
+                        name: { type: 'text' },
+                        email: { type: 'keyword' },
+                        mssv: { type: 'keyword' },
+                        bio: { type: 'text' },
+                        address: { type: 'text' },
+                        gender: { type: 'keyword' },
+                        role: { type: 'keyword' },
+                        createdAt: { type: 'date' },
+                        updatedAt: { type: 'date' }
+                    }
                 }
             });
 
@@ -168,14 +161,16 @@ class ElasticsearchService {
                 .sort({ createdAt: -1 });
 
             await this.createIndexIfNotExists('posts', {
-                properties: {
-                    content: { type: 'text' },
-                    images: { type: 'keyword' },
-                    userId: { type: 'keyword' },
-                    userName: { type: 'text' },
-                    userMssv: { type: 'keyword' },
-                    createdAt: { type: 'date' },
-                    updatedAt: { type: 'date' }
+                mappings: {
+                    properties: {
+                        content: { type: 'text' },
+                        images: { type: 'keyword' },
+                        userId: { type: 'keyword' },
+                        userName: { type: 'text' },
+                        userMssv: { type: 'keyword' },
+                        createdAt: { type: 'date' },
+                        updatedAt: { type: 'date' }
+                    }
                 }
             });
 
@@ -201,15 +196,12 @@ class ElasticsearchService {
 
     // Đồng bộ tất cả data
     async syncAllData() {
-        console.log('🔄 Starting data synchronization...');
         await this.syncAllUsers();
         await this.syncAllPosts();
-        console.log('✅ Data synchronization completed');
     }
 
     // Reconnect nếu mất kết nối
     async reconnect() {
-        console.log('🔄 Attempting to reconnect to Elasticsearch...');
         await this.checkConnection();
         if (this.isConnected) {
             await this.syncAllData();

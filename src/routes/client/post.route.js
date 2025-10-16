@@ -5,9 +5,9 @@ const { loadListPostMiddleware, likePostMiddleware, commentPostMiddleware, handl
 const postController = require("../../controllers/post.controller");
 const upload = require("../../middlewares/upload.middleware"); // multer memoryStorage
 
-route.get("/getAll", authMiddleware, loadListPostMiddleware,  postController.getAllPost);
-route.post("/likePost", authMiddleware, likePostMiddleware , postController.likePost);
-route.post("/commentPost", authMiddleware, upload.array("images") , handleImages, commentPostMiddleware, postController.commentPost );
-route.post("/sharePost", authMiddleware, sharePostMiddleware, postController.sharePost  );
+route.get("/getAll", authMiddleware, loadListPostMiddleware, postController.getAllPost);
+route.post("/likePost", authMiddleware, likePostMiddleware, postController.likePost);
+route.post("/commentPost", authMiddleware, upload.array("images"), handleImages, commentPostMiddleware, postController.commentPost);
+route.post("/sharePost", authMiddleware, sharePostMiddleware, postController.sharePost);
 
 module.exports = route;
