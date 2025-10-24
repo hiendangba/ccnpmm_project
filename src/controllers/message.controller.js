@@ -67,13 +67,13 @@ const messageController = {
       if (req.file && type === "image") {
         attachment = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
-            { resource_type: "image" ,
-            resource_type: type,
-            timeout: 200000, // ⏱ 20 giây timeout
+            {
+              resource_type: "image",
+              resource_type: type,
+              timeout: 200000, // ⏱ 20 giây timeout
             },
             (error, result) => {
-              if (error)
-              {
+              if (error) {
                 console.log(error.message)
                 return reject(
                   new AppError(CloudinaryError.CLOUD_UPLOAD_ERROR)
