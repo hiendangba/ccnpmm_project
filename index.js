@@ -16,7 +16,7 @@ const { initSocket } = require("./src/config/socket");
 dotenv.config();
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3002"],
+  origin: ["https://ccnpmm-project-fe.vercel.app", "http://localhost:5173", "http://localhost:3002"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true

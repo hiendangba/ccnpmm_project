@@ -43,8 +43,8 @@ const authController = {
       const { user_id, token, refreshToken } = await authServices.login(loginRequest);
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: 'Strict',
+        secure: true,
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
       });
       const loginResponse = new LoginResponseDTO(user_id, token);
@@ -122,17 +122,6 @@ const authController = {
       res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
     }
   },
-
-  createToken: async (req, res) => {
-    try {
-      const { id } = req.body;
-      console.log(id)
-      res.status(200).json("thành công");
-    }
-    catch (err) {
-      res.status(err.statusCode).json({ message: err.message, status: err.statusCode, errorCode: err.errorCode });
-    }
-  }
 
 };
 

@@ -12,6 +12,4 @@ authRouter.post("/verify-otpFP", authController.verifyOtpFB);
 authRouter.post("/reset-password", checkPassTokenMiddleware, authController.resetPassword);
 authRouter.post("/resend-OTP", authController.resendOTP);
 authRouter.post("/refreshToken", authController.refreshToken);
-
-authRouter.post("/createToken", authController.createToken);
 module.exports = authRouter;
