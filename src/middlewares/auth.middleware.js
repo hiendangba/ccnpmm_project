@@ -54,6 +54,7 @@ const requireRole = (allowedRoles) => {
 
 const checkPassTokenMiddleware = (req, res, next) => {
   const resetToken = req.cookies.resetPass_token;
+  console.log("Reset Token Middleware:", resetToken);
   if (!resetToken) {
     return res.status(401).json({ message: "Không có token, không thể thực hiện hành động." });
   }

@@ -86,8 +86,8 @@ const authController = {
       const resetToken = await authServices.verifyOtpFB(verifyOtpRequest);
       res.cookie('resetPass_token', resetToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: 10 * 60 * 1000
       })
       const verifyOTPFBResponseDTO = new VerifyOTPFBResponseDTO("Xác thực OTP thành công.");
